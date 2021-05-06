@@ -1,0 +1,339 @@
+@import "./utils/bootstrap-reboot.css";
+@import "assets/fonts/CircularXX.css";
+
+:root {
+  --app-width: 41.4rem;
+  --app-height: 89.6rem;
+  // FILTER VALUES: Use these to adjust image colors.
+  // Remove color, bump brightness 10,000% to ensure perfect white.
+  --toWhite: grayscale(1) brightness(100);
+  // This fun mix of filters turns white into as close to our "HotPink" as
+  // possible. Renders `#da257d` instead of `#da207b`, for a 2% difference in
+  // green and a 1% difference in blue. Feel free to attempt to tune further.
+  --toPink: var(--toWhite) invert(71.5%) sepia(1) saturate(7) hue-rotate(-71deg);
+
+  font-size: 10px;
+}
+
+body,
+p,
+div,
+section,
+span {
+  margin: 0;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  background-color: #000;
+}
+
+h2 {
+  font-size: 1.8rem;
+}
+
+section {
+  display: flex;
+  position: relative;
+}
+
+#app {
+  display: block;
+  position: relative;
+  width: 100vw;
+  max-width: var(--app-width);
+  height: 100vh;
+  max-height: var(--app-height);
+  margin: 2.1rem auto 0;
+  overflow: hidden;
+  //box-shadow: 1px 2px 10px rgba(0, 0, 0, 0.5);
+  font-family: CircularXX, "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
+    sans-serif;
+  // For Demo Only!
+  border-radius: 5rem;
+}
+
+main {
+  background: linear-gradient(120deg, #51283d -10%, #322a40 110%);
+  padding: 3.8rem 0 9rem;
+}
+
+button {
+  height: 64px;
+  width: 200px;
+  border: none;
+  text-align: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &.btn-link {
+    background-color: transparent;
+    color: #fff;
+    height: initial;
+    width: initial;
+    border-radius: initial;
+  }
+
+  &:active,
+  &:focus {
+    outline: none;
+  }
+
+  &.medium {
+    font-style: normal;
+    font-weight: normal;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #808080;
+  }
+
+  &.primary {
+    color: #fff;
+    background: linear-gradient(120.49deg, #ed1e79 0%, #522785 100%);
+  }
+
+  &.secondary {
+    border: 2px solid #808080;
+    box-sizing: border-box;
+    border-radius: 8px;
+  }
+
+  &.tertiary {
+    background: rgba(41, 42, 46, 0.5);
+    border: 1px solid #fff;
+    color: #fff;
+    border-radius: 8px;
+  }
+}
+
+div.image-box {
+  background: #c4c4c4;
+  border: 1px solid #808080;
+  box-sizing: border-box;
+  border-radius: 8px;
+  width: 200px;
+  height: 200px;
+  position: relative;
+
+  + label {
+    position: absolute;
+    width: 158px;
+    left: calc(50% - 158px / 2);
+    top: 83.87%;
+    bottom: 0%;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 1.5rem;
+    line-height: 1.875rem;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #808080;
+  }
+}
+
+input[type="text"],
+textarea {
+  background: #f1f1f1;
+  border-radius: 8px;
+  box-shadow: none;
+  outline: none;
+  width: 20rem;
+  border: 1px solid #c3c3c4;
+  color: #292a2e;
+  font-size: 1rem;
+  line-height: 22px;
+
+  &::placeholder {
+    color: #818284;
+    text-align: center;
+  }
+}
+
+.no-select {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
+
+li {
+  list-style: none;
+  display: inline-block;
+  margin: 10px 10px;
+}
+
+a {
+  color: inherit;
+
+  &:hover {
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
+/* SIGN-IN PAGE */
+
+#form-container {
+  position: absolute;
+  height: calc(100%);
+  width: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .error {
+    display: block;
+    margin: 0 auto;
+    font-size: 24px;
+    color: red;
+  }
+
+  img {
+    margin-top: 176px;
+  }
+
+  form {
+    flex-direction: column;
+    align-items: center;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+
+    label {
+      margin-top: 25%;
+      color: #000;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    input {
+      padding: 16px;
+      width: 75%;
+      color: #000;
+    }
+    input#username,
+    input#username::placeholder {
+      font-size: 24px;
+    }
+  }
+}
+
+button#sign-in {
+  align-self: end;
+  justify-self: end;
+  display: flex;
+  width: 75%;
+  margin: auto auto 32px auto;
+  font-size: 24px;
+}
+
+input#username {
+  text-align: center;
+
+  &:focus::placeholder,
+  &:active::placeholder {
+    visibility: hidden;
+  }
+}
+
+.feed {
+  height: var(--app-height);
+  width: var(--app-width);
+  position: absolute;
+  top: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  -ms-overflow-style: none; // Hide scrollbars in IE
+  scrollbar-width: none; // Hide scrollbars in Firefox
+  scroll-snap-type: y mandatory;
+
+  &::-webkit-scrollbar {
+    // Hide scrollbars in Chrome/Safari/Edge
+    display: none;
+  }
+}
+
+.userId {
+  font-size: 18px;
+  font-weight: 700;
+  display: inline-block;
+  margin-top: 16px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.empty-list-add {
+  position: absolute;
+  bottom: 32px;
+  left: 48px;
+}
+
+button.log-out {
+  position: absolute;
+  left: 80px;
+  width: 64px;
+  height: 32px;
+  top: 16px;
+  font-size: 12px;
+}
+
+.page-fade {
+  position: absolute;
+
+  &-enter {
+    opacity: 0;
+    transform: scale(1.1);
+
+    &-active {
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+  }
+
+  &-exit {
+    opacity: 1;
+    transform: scale(1);
+
+    &-active {
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+  }
+}
+
+.page-slide {
+  --inDirection: 100%;
+  --outDirection: calc(var(--inDirection) * -1);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+
+  &-enter {
+    transform: translateX(var(--inDirection));
+
+    &-active {
+      transform: translateX(0);
+      transition: transform 0.25s ease-out;
+    }
+  }
+
+  &-exit {
+    transform: translateX(0);
+
+    &-active {
+      transform: translateX(var(--outDirection));
+      transition: transform 0.25s ease-out;
+    }
+  }
+}

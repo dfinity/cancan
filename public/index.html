@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CanCan</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <img
+      id="phone-frame"
+      src="%PUBLIC_URL%/images/iPhoneFrame.png"
+      alt="Phone frame"
+      style="
+        --width: 464px;
+        position: absolute;
+        top: -1px;
+        left: calc(50% - (var(--width) / 2));
+        width: var(--width);
+        z-index: 3;
+        pointer-events: none;
+      "
+    />
+    <img
+      id="phone-home-bar"
+      src="%PUBLIC_URL%/images/homeBar.png"
+      alt="Phone home bar"
+      style="
+        --width: 135px;
+        position: absolute;
+        top: 90rem;
+        left: calc(50% - (var(--width) / 2));
+        width: var(--width);
+        opacity: 0.9;
+        z-index: 3;
+        pointer-events: none;
+      "
+    />
+    <div id="app"></div>
+  </body>
+</html>

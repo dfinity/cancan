@@ -1,0 +1,7 @@
+//import CanCan = "ai7t5-aibaq-aaaaa-aaaaa-c";
+import CanCan = "rrkah-fqaaa-aaaaa-aaaaq-cai";
+call CanCan.createTestData(
+  vec { "alice"; "bob"},
+  vec {
+    record { "bob"; "fish0" };
+  });

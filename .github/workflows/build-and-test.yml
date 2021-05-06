@@ -1,0 +1,78 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the main branch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # environment variables to set for dfx
+    env:
+      DFX_VERSION: 0.7.0-beta.6
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v2
+      with:
+        node-version: "12"
+    - name: Install
+      run: |
+        echo y | DFX_VERSION=$DFX_VERSION bash -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+        # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        # source $HOME/.cargo/env
+        # rustup target add wasm32-unknown-unknown
+        echo "/home/runner/bin" >> $GITHUB_PATH
+        ./scripts/vessel-install.sh
+        # ./scripts/moc-install.sh
+
+    - name: Build and bootstrap
+      run: |
+        # source $HOME/.cargo/env
+        echo "dfx cache install"
+        dfx cache install
+        dfx cache show
+        # cp -f $HOME/bin/moc $HOME/.cache/dfinity/versions/$DFX_VERSION/moc
+        echo "dfx start --background"
+        dfx start --background
+        echo "npm dependencies"
+        apt update && apt install -y python build-essential git
+        echo "npm install from lockfile"
+        npm ci
+        echo "/bootstrap.sh"
+        # bootstrapping will be force-stopped if it takes too long
+
+        timeout 1800 ./bootstrap.sh
+    # - name: e2e test
+    #   run: npm run test:e2e:ci
+    - name: stop dfx
+      run: |
+        echo "dfx stop"
+        dfx stop
+
+    - name: Upload e2e videos artifact
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: failed-e2e-files
+        path: ~/work/cancan-archived/cancan-archived/e2e/cypress/videos/*.mp4
+
+    - name: Upload failed files artifact
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: fail-build
+        path: |
+          ~/.npm/_logs/*debug.log
+          ~/work/cancan-archived/cancan-archived/e2e/cypress/screenshots/*
+          !/work/cancan-archived/cancan-archived/.dfx/**/*
+          !**/*.mp4
+          !**node_modules**
