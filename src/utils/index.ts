@@ -10,7 +10,7 @@ export * from "./canister";
 export const KEY_LOCALSTORAGE_USER = `ic-cancan-user`;
 
 export const MAX_CHUNK_SIZE = 1024 * 500; // 500kb
-export const REWARDS_CHECK_INTERVAL = 10000;
+export const REWARDS_CHECK_INTERVAL = 60000;
 export const hashtagRegExp = /(?:\s|^)#[A-Za-z0-9\-._]+(?:\s|$)/gim;
 
 export const encodeArrayBuffer = (file: ArrayBuffer): number[] =>

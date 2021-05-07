@@ -10,17 +10,18 @@ BASEDIR=$(
 )
 cd "$BASEDIR"
 
-address="http://localhost"
+host="localhost"
+address="http://$host"
 port=$(dfx config defaults.start.port)
 
 echo "dfx build"
 npm run deploy
 
-echo "Running seed script..."
-echo "\nThis command may prompt you to install node to run.\nPlease accept and continue."
+# echo "Running seed script..."
+# echo "\nThis command may prompt you to install node to run.\nPlease accept and continue."
 # npm run seed -- 2
 
-URL="$address:$port/?canisterId=$(dfx canister id cancan_ui)"
+URL="http://$(dfx canister id cancan_ui).$host:$port/"
 
 echo "Open at $URL"
 
