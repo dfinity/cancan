@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 
 import { ProfileInfoPlus, Message } from "../utils/canister/typings";
-import { getMessages } from "../utils";
+import { getMessages, REWARDS_CHECK_INTERVAL } from "../utils";
 import LottieAnimation from "./LottieAnimation";
 import RewardPointAnim from "../assets/animations/RewardPointShower.json";
 import "./RewardShowerNotification.scss";
 
-const KEY_LOCALSTORAGE_READ_MESSAGES_TIME = 'ic-can-can-read_messages';
+const KEY_LOCALSTORAGE_READ_MESSAGES_TIME = "ic-can-can-read_messages";
 
 interface RewardShowerProps {
   currentUser: ProfileInfoPlus;
@@ -14,20 +14,24 @@ interface RewardShowerProps {
 
 // Count up all the reward points from a message
 function rewardPointsReducer(acc: number, message: Message) {
-  const { event } = message
+  const { event } = message;
   let reward = 0;
+
+  if (!event) return acc;
   // @ts-ignore
   if (event.uploadReward) reward = Number(event.uploadReward.rewards);
   // @ts-ignore
   if (event.superlikerReward) reward = Number(event.superlikerReward.rewards);
   // @ts-ignore
   if (event.transferReward) reward = Number(event.transferReward.rewards);
-  return acc + reward
+  return acc + reward;
 }
 
 // Filter messages based on the last date they were read, stored in localStorage
 function unreadMessagesFilter(message: Message) {
-  const lastReadTime = localStorage.getItem(KEY_LOCALSTORAGE_READ_MESSAGES_TIME);
+  const lastReadTime = localStorage.getItem(
+    KEY_LOCALSTORAGE_READ_MESSAGES_TIME
+  );
   if (!lastReadTime) return true;
   return message.time > BigInt(lastReadTime);
 }
@@ -40,6 +44,7 @@ export function RewardShowerNotification(props: RewardShowerProps) {
   function checkForNewMessages() {
     getMessages(props.currentUser.userName).then((messages) => {
       const unreadMessages = messages.filter(unreadMessagesFilter);
+      if (unreadMessages.length === 0) return;
       const rewardPoints = unreadMessages.reduce(rewardPointsReducer, 0);
       if (rewardPoints > 0) {
         setRewards(rewardPoints);
@@ -62,10 +67,10 @@ export function RewardShowerNotification(props: RewardShowerProps) {
     setRewards(0);
   }
 
-  // Check the user messages for reward messages, every 10 seconds
+  // Check the user messages for reward messages, every minute.
   useEffect(() => {
     checkForNewMessages();
-    const interval = setInterval(checkForNewMessages, 10000);
+    const interval = setInterval(checkForNewMessages, REWARDS_CHECK_INTERVAL);
     return () => clearInterval(interval);
   }, []);
 
