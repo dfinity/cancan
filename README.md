@@ -37,7 +37,7 @@ $ npm ci # <- This installs packages from the lockfile for consistency
 $ ./bootstrap.sh
 ```
 
-This will deploy a local canister called `cancan_ui` and open your default web browser to the app.
+This will deploy a local canister called `cancan_ui`. To open the front-end, get the asset canister id by running `dfx canister id cancan_ui`. Then open your browser, and navigate to `http://<cancan_ui-canister-id>.localhost:9000/sign-in`.
 
 ## Frontend Development
 
