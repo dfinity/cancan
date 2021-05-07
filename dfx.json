@@ -19,7 +19,7 @@
   },
   "defaults": {
     "build": {
-      "packtool": "./vessel sources",
+      "packtool": "vessel sources",
       "output": "build"
     },
     "start": {

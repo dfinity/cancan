@@ -18,6 +18,7 @@ Double-check you have [vessel](https://github.com/dfinity/vessel) installed at v
 ```shell
 $ vessel --version
 # vessel 0.6.0
+# if this does not work, run ./scripts/vessel-install.sh to download and install
 
 $ git clone git@github.com:dfinity/cancan.git
 $ cd cancan
