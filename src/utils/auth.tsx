@@ -46,7 +46,7 @@ export function useProvideAuth(authClient): AuthContext {
       // Check to make sure your local storage user exists on the backend, and
       // log out if it doesn't (this is when you have your user stored in local
       // storage but the user was cleared from the backend)
-      getUserFromCanister(lsUser.userName).then((user_) => !user_ && logout());
+      getUserFromCanister(lsUser.userName).then((user_) => !user_ && logOut());
       return () => void 0;
     }
   };
