@@ -71,7 +71,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   // responsible for adding metadata from the user to the state.
   // a null principal means that the username has no valid callers (yet), and the admin
   // must relate one or more principals to it.
-  func createProfile_(userName_ : Text, p: ?Principal, pic_ : ?ProfilePic) : ?ProfileInfoPlus {
+  func createProfile_(userName_ : Text, p: ?Principal, pic_ : ?ProfilePic) : ?() {
     switch (state.profiles.get(userName_)) {
       case (?_) { /* error -- ID already taken. */ null };
       case null { /* ok, not taken yet. */
@@ -91,8 +91,8 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
           case null { }; // no related principals, yet.
           case (?p) { state.access.userPrincipal.put(userName_, p); }
         };
-        // return the full profile info
-        getProfilePlus_(userName_)
+        // success
+        ?()
       };
     }
   };
@@ -104,7 +104,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   public shared(msg) func createProfile(userName : Text, pic : ?ProfilePic) : async ?ProfileInfoPlus {
     do ? {
       accessCheck(msg.caller, #create, #user userName)!;
-      createProfile_(userName, ?msg.caller, pic)!
+      createProfile_(userName, ?msg.caller, pic)!;
+      // return the full profile info
+      getProfilePlus_(?userName, userName)! // self-view
     }
   };
 
@@ -157,16 +159,16 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getProfileInfo_(userId : UserId) : ?ProfileInfo {
+  func getProfileInfo_(target : UserId) : ?ProfileInfo {
     do ? {
-      let profile = state.profiles.get(userId)!;
-      let following_ = state.follows.get0(userId);
-      let followers_ = state.follows.get1(userId);
-      let likes_ = state.likes.get0(userId);
-      let superLikes_ = state.superLikes.get0(userId);
-      let uploaded_ = state.uploaded.get0(userId);
-      let rewards_ = state.rewards.get(userId)!;
-      let abuseFlags_ = state.abuseFlagVideos.get1Size(userId) ;
+      let profile = state.profiles.get(target)!;
+      let following_ = state.follows.get0(target);
+      let followers_ = state.follows.get1(target);
+      let likes_ = state.likes.get0(target);
+      let superLikes_ = state.superLikes.get0(target);
+      let uploaded_ = state.uploaded.get0(target);
+      let rewards_ = state.rewards.get(target)!;
+      let abuseFlagCount_ = state.abuseFlagVideos.get1Size(target);
       {
         userName = profile.userName ;
         followers = filterOutAbuseUsers(followers_)! ;
@@ -176,7 +178,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         uploadedVideos = filterOutAbuseVideos(uploaded_)! ;
         hasPic = false ;
         rewards = rewards_;
-        abuseFlags = abuseFlags_; // count other users' abuse flags on this user's profile.
+        abuseFlagCount = abuseFlagCount_ ;
       }
     }
   };
@@ -188,13 +190,22 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  // this is a deeper serialization of the user's profile so that we can do less work on the front-end.
-  //  I opted not to replace "getProfileInfo" as this is possibly bad code I (Andrew) have written, and don't want to
-  // fully commit :D -AW
-  public query(msg) func getProfilePlus(userId: UserId): async ?ProfileInfoPlus {
+  /// "Deeper" version of ProfileInfo.
+  ///
+  /// Gives Video- and ProfileInfos instead of merely Ids in the results.
+  ///
+  /// The optional "caller" UserId personalizes the
+  public query(msg) func getProfilePlus(caller: ?UserId, target: UserId): async ?ProfileInfoPlus {
     do ? {
-      accessCheck(msg.caller, #view, #user userId)!;
-      getProfilePlus_(userId)!
+      accessCheck(msg.caller, #view, #user target)!;
+      switch caller {
+        case null { getProfilePlus_(null, target)! };
+        case (?callerUserName) {
+               // has private access to our caller view?
+               accessCheck(msg.caller, #update, #user callerUserName)!;
+               getProfilePlus_(?callerUserName, target)!
+             };
+      }
     }
   };
 
@@ -224,13 +235,13 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getNonAbuseVideos(videos: [VideoId]) : ?[VideoInfo] {
+  func getNonAbuseVideos(caller: ?UserId, videos: [VideoId]) : ?[VideoInfo] {
     do ? {
       let nonAbuse = Buffer.Buffer<VideoInfo>(0);
       for (v in videos.vals()) {
         let flags = state.abuseFlagVideos.get1Size(v);
         if (flags < Param.contentModerationThreshold) {
-          nonAbuse.add(getVideoInfo_(v)!)
+          nonAbuse.add(getVideoInfo_(caller, v)!)
         }
       };
       nonAbuse.toArray()
@@ -250,19 +261,21 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getProfilePlus_(userId: UserId): ?ProfileInfoPlus {
-    //  TODO: add auth
+  func getProfilePlus_(caller: ?UserId, userId: UserId): ?ProfileInfoPlus {
     do ? {
       let profile = state.profiles.get(userId)!;
       {
         userName = profile.userName;
         following = getNonAbuseProfiles(state.follows.get0(userId))!;
         followers = getNonAbuseProfiles(state.follows.get1(userId))!;
-        likedVideos = getNonAbuseVideos(state.likes.get0(userId))!;
-        uploadedVideos = getNonAbuseVideos(state.uploaded.get0(userId))!;
+        likedVideos = getNonAbuseVideos(caller, state.likes.get0(userId))!;
+        uploadedVideos = getNonAbuseVideos(caller, state.uploaded.get0(userId))!;
         hasPic = false;
         rewards = state.rewards.get(userId)!;
-        abuseFlags = state.abuseFlagUsers.get1Size(userId) ; // other users' flags on this one.
+        abuseFlagCount = state.abuseFlagUsers.get1Size(userId) ; // count total for userId.
+        abuseFlagFlag = do ? { // if caller is non-null,
+          state.abuseFlagUsers.isMember(caller!, userId) ; // check if we are there.
+        }
       }
     }
  };
@@ -283,7 +296,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
       accessCheck(msg.caller, #admin, #all)!;
       let b = Buffer.Buffer<VideoInfo>(0);
       for ((v, _) in state.videos.entries()) {
-        b.add(getVideoInfo_(v)!)
+        b.add(getVideoInfo_(null, v)!)
       };
       b.toArray()
     }
@@ -354,7 +367,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
 
   func getVideoResult(i : VideoId) : ?VideoResult {
     do ? {
-      (getVideoInfo_(i)!, state.videoPics.get(i))
+      (getVideoInfo_(null, i)!, state.videoPics.get(i))
     }
   };
 
@@ -391,7 +404,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         if (vids.get(vid) == null) {
             vids.put(vid, ());
             let vPic = state.videoPics.get(vid);
-            let vi = getVideoInfo_(vid)!;
+            let vi = getVideoInfo_(?userId, vid)!;
             buf.add((vi, vPic));
         }
       };
@@ -401,7 +414,8 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
 
   public query(msg) func getFeedVideos(userId : UserId, limit : ?Nat) : async ?VideoResults {
     do ? {
-      accessCheck(msg.caller, #view, #user userId)!;
+      // privacy check: because we personalize the feed (example is abuse flag information).
+      accessCheck(msg.caller, #update, #user userId)!;
       getFeedVideos_(userId, limit)!
     }
   };
@@ -670,7 +684,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getVideoInfo_ (videoId : VideoId) : ?VideoInfo {
+  func getVideoInfo_ (caller : ?UserId, videoId : VideoId) : ?VideoInfo {
     do ? {
       let v = state.videos.get(videoId)!;
       {
@@ -690,15 +704,25 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         // This implementation makes public all users who flagged every video,
         // but if that information should be kept private, get video info
         // could return just whether the calling user flagged it.
-        abuseFlagUsers = state.abuseFlagVideos.get1(videoId) ;
+        abuseFlagFlag = do ? {
+          state.abuseFlagVideos.isMember(caller!, videoId) ;
+        };
+        abuseFlagCount = state.abuseFlagVideos.get1Size(videoId);
       }
     }
   };
 
-  public query(msg) func getVideoInfo (videoId : VideoId) : async ?VideoInfo {
+  public query(msg) func getVideoInfo (caller : ?UserId, target : VideoId) : async ?VideoInfo {
     do ? {
-      accessCheck(msg.caller, #view, #video videoId)!;
-      getVideoInfo_(videoId)!
+      accessCheck(msg.caller, #view, #video target)!;
+      switch caller {
+        case null { getVideoInfo_(null, target)! };
+        case (?callerUserName) {
+               // has private access to our caller view?
+               accessCheck(msg.caller, #update, #user callerUserName)!;
+               getVideoInfo_(?callerUserName, target)!
+             };
+      }
     }
   };
 
@@ -806,7 +830,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   func createTestData_(users : [UserId], videos : [(UserId, VideoId)]) : ?() {
     do ? {
       for (u in users.vals()) {
-        let _ = createProfile_(u, null, null)!;
+        createProfile_(u, null, null)!;
       };
       for ((u, v) in videos.vals()) {
         let _ = createVideo_(

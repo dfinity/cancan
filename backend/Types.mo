@@ -55,9 +55,12 @@ public type ProfileInfo = {
  likedVideos: [VideoId];
  hasPic: Bool;
  rewards: Nat;
- abuseFlags: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
 };
 
+/// "Deeper" version of ProfileInfo.
+///
+/// Gives Video- and ProfileInfos instead of merely Ids in the results.
 public type ProfileInfoPlus = {
   userName: Text;
  following: [ProfileInfo];
@@ -66,7 +69,12 @@ public type ProfileInfoPlus = {
  likedVideos: [VideoInfo];
  hasPic: Bool;
  rewards: Nat;
- abuseFlags: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ /// abuseFlagFlag is
+ /// ?true if we (the User requesting this profile) has flagged this profile for abuse.
+ /// ?false if not, and
+ /// null if no specific requesting user is defined by context.
+ abuseFlagFlag: ?Bool;
 };
 
 /// video information provided by front end to service, upon creation.
@@ -94,7 +102,12 @@ public type VideoInfo = {
  viewCount: Nat;
  name: Text;
  chunkCount: Nat;
- abuseFlagUsers: [UserId]; // A lit of users that have flagged this video for abuse
+ abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ /// abuseFlagFlag is
+ /// ?true if we (the User requesting this profile) has flagged this profile for abuse.
+ /// ?false if not, and
+ /// null if no specific requesting user is defined by context.
+ abuseFlagFlag: ?Bool; // true if we (the User requesting this profile) has flagged this profile for abuse.
 };
 
 public type VideoResult = (VideoInfo, ?VideoPic);
