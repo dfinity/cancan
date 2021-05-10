@@ -43,6 +43,10 @@ export function useProvideAuth(authClient): AuthContext {
     if (lsUser) {
       setUser(lsUser);
       setIsAuthenticatedLocal(true);
+      // Check to make sure your local storage user exists on the backend, and
+      // log out if it doesn't (this is when you have your user stored in local
+      // storage but the user was cleared from the backend)
+      getUserFromCanister(lsUser.userName).then((user_) => !user_ && logOut());
       return () => void 0;
     }
   };
@@ -55,7 +59,9 @@ export function useProvideAuth(authClient): AuthContext {
       ([identity, isAuthenticated]) => {
         setIsAuthenticatedLocal(isAuthenticated || false);
         _setIdentity(identity);
-        setUserFromLocalStorage();
+        if (isAuthenticated) {
+          setUserFromLocalStorage();
+        }
         setAuthClientReady(true);
       }
     );
@@ -124,6 +130,7 @@ export function useProvideAuth(authClient): AuthContext {
   function logOut() {
     setUser(undefined);
     setIsAuthenticatedLocal(false);
+    localStorage.removeItem(KEY_LOCALSTORAGE_USER);
     if (!authClient.ready) return;
     authClient.logout();
   }
