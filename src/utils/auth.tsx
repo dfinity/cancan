@@ -106,8 +106,8 @@ export function useProvideAuth(authClient): AuthContext {
   const identity = _identity;
   const isAuthenticated = isAuthenticatedLocal;
 
-  // Login to the identity provider by sending user to the IDP and logging
-  // them in.
+  // Login to the identity provider by sending user to Internet Identity
+  // and logging them in.
   const logIn = async function (): Promise<void> {
     if (!authClient) return;
     await authClient.login();
@@ -116,7 +116,7 @@ export function useProvideAuth(authClient): AuthContext {
       setIsAuthenticatedLocal(true);
       _setIdentity(identity);
     } else {
-      console.error("Could not get identity from identity provider");
+      console.error("Could not get identity from internet identity");
     }
   };
 
