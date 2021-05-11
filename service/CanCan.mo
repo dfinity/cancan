@@ -195,7 +195,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   /// Gives Video- and ProfileInfos instead of merely Ids in the results.
   ///
   /// The optional "caller" UserId personalizes the resulting record for
-e  /// various cases:
+  /// various cases:
   /// - When caller is not given, less information is non-null in result.
   /// - When calling user is viewing their own profile,
   ///   gives private and quasi-private info to them about their allowances.
@@ -267,8 +267,56 @@ e  /// various cases:
     }
   };
 
+  func computeAllowance_(limitPerRecentDuration : Nat,
+                         includePred : State.Event.Event -> Bool,
+                         excludePred : State.Event.Event -> Bool,
+  ) : Types.AllowanceBalance {
+    let now = timeNow_();
+    let matches = collectLogMatches(includePred, excludePred);
+    if (matches.size() < limitPerRecentDuration) {
+      #nonZero (limitPerRecentDuration - matches.size()) // total remaining.
+    } else {
+      assert matches.size() == limitPerRecentDuration; // we should not exceed the limit
+      let last = matches[0]; // last relevant event
+      let durationSinceLast = now - last.time; // already waited this long
+      #zeroUntil (now + Param.recentPastDuration - durationSinceLast) // total wait.
+    }
+  };
+
   func getUserAllowances_(user: UserId) : Types.UserAllowances {
-    loop { assert false } // to do
+    // to do -- properly handle undone flags and super-likes with excludePred,
+    // which should exclude old (outdated) superlikes or flags that have since been undone, later.
+    // (by returning false for excludePred, we withold the user's allowances more than necessary)
+    {
+      abuseFlags = computeAllowance_(
+        Param.maxRecentAbuseFlags,
+        func (ev: State.Event.Event) : Bool {
+          switch (ev.kind) {
+            case (#abuseFlag(af)) {
+              af.flag and
+              af.reporter == user
+            };
+            case _ { false };
+          }
+        },
+        func (ev: State.Event.Event) : Bool {
+          false
+        });
+      superLikes = computeAllowance_(
+        Param.maxRecentSuperLikes,
+        func (ev: State.Event.Event) : Bool {
+          switch (ev.kind) {
+            case (#superLikeVideo(slv)) {
+              slv.superLikes and
+              slv.source == user
+            };
+            case _ { false };
+          }
+        },
+        func (ev: State.Event.Event) : Bool {
+          false
+        });
+    }
   };
 
   func getProfilePlus_(caller: ?UserId, userId: UserId): ?ProfileInfoPlus {
@@ -487,19 +535,28 @@ e  /// various cases:
   };
 
   /// Collect "recent events" that match from the log.
-  /// Generalizes of checkEmitVideoViral_.
+  ///
+  /// Visits events and orders array as most-to-least recent matching events.
+  /// (Most recent match is first visited and first in output, if any.
+  /// Least recent match is last visited and last in output, if any.)
+  ///
+  /// Generalizes checkEmitVideoViral_.
+  ///
   /// This is "efficient enough" because we never check the full log,
   /// and we intend to accelerate this operation further with
   /// more pre-emptive caching of what we learn from doing this linear scan.
   /// (Util this linear scan is too slow, let's avoid the complexity of more caching.)
-  func collectLogMatches(eventPred : State.Event.Event -> Bool) : [State.Event.Event] {
+  func collectLogMatches(
+    includePred : State.Event.Event -> Bool,
+    excludePred : State.Event.Event -> Bool,
+  ) : [State.Event.Event] {
     let now = timeNow_();
     let notRecent = now - Param.recentPastDuration;
     let matches = Buffer.Buffer<State.Event.Event>(0);
     label hugeLog
     for (ev in state.eventLog.revVals()) {
       if(ev.time <= notRecent){ break hugeLog };
-      if (eventPred(ev)) {
+      if (not excludePred(ev) and includePred(ev)) {
         matches.add(ev)
       }
     };

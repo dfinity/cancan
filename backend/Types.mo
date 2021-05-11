@@ -62,7 +62,7 @@ public type AllowanceBalance = {
   /// Non-zero balance of the given amount (the allowance unit varies by use).
   #nonZero : Nat;
   /// Zero now, and will be zero until the IC reaches the given time.
-  #zeroUtil : Timestamp;
+  #zeroUntil : Timestamp;
 };
 
 /// "Deeper" version of ProfileInfo.
