@@ -15,7 +15,7 @@
     "module": "esnext",
     "downlevelIteration": true,
     "strict": true,
-    "target": "es6",
+    "target": "es2018",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
