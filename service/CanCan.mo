@@ -261,6 +261,10 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
+  func getUserAllowances_(user: UserId) : Types.UserAllowances {
+    loop { assert false } // to do
+  };
+
   func getProfilePlus_(caller: ?UserId, userId: UserId): ?ProfileInfoPlus {
     do ? {
       let profile = state.profiles.get(userId)!;
@@ -276,10 +280,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         abuseFlagFlag = do ? { // if caller is non-null,
           state.abuseFlagUsers.isMember(caller!, userId) ; // check if we are there.
         };
-        allowances = if (caller! == userId) {
-          // to do
-          null
-        } else { null };
+        allowances = do ? { if (caller! == userId) {
+          getUserAllowances_(caller!)
+        } else { null! } };
       };
     }
   };
