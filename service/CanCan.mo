@@ -194,7 +194,13 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   ///
   /// Gives Video- and ProfileInfos instead of merely Ids in the results.
   ///
-  /// The optional "caller" UserId personalizes the
+  /// The optional "caller" UserId personalizes the resulting record for
+e  /// various cases:
+  /// - When caller is not given, less information is non-null in result.
+  /// - When calling user is viewing their own profile,
+  ///   gives private and quasi-private info to them about their allowances.
+  /// - When calling user is viewing profile of another user,
+  ///   gives private info about super likes / abuse flags toward that use.
   public query(msg) func getProfilePlus(caller: ?UserId, target: UserId): async ?ProfileInfoPlus {
     do ? {
       accessCheck(msg.caller, #view, #user target)!;
