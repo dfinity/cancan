@@ -275,10 +275,14 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         abuseFlagCount = state.abuseFlagUsers.get1Size(userId) ; // count total for userId.
         abuseFlagFlag = do ? { // if caller is non-null,
           state.abuseFlagUsers.isMember(caller!, userId) ; // check if we are there.
-        }
-      }
+        };
+        allowances = if (caller! == userId) {
+          // to do
+          null
+        } else { null };
+      };
     }
- };
+  };
 
   public query(msg) func getProfiles() : async ?[ProfileInfo] {
     do ? {
@@ -471,6 +475,26 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
           let v = state.videos.get(videoId)!;
           v.viralAt!
     })
+  };
+
+  /// Collect "recent events" that match from the log.
+  /// Generalizes of checkEmitVideoViral_.
+  /// This is "efficient enough" because we never check the full log,
+  /// and we intend to accelerate this operation further with
+  /// more pre-emptive caching of what we learn from doing this linear scan.
+  /// (Util this linear scan is too slow, let's avoid the complexity of more caching.)
+  func collectLogMatches(eventPred : State.Event.Event -> Bool) : [State.Event.Event] {
+    let now = timeNow_();
+    let notRecent = now - Param.recentPastDuration;
+    let matches = Buffer.Buffer<State.Event.Event>(0);
+    label hugeLog
+    for (ev in state.eventLog.revVals()) {
+      if(ev.time <= notRecent){ break hugeLog };
+      if (eventPred(ev)) {
+        matches.add(ev)
+      }
+    };
+    matches.toArray()
   };
 
   // check if we need to emit viral video signal to CanCan logic.

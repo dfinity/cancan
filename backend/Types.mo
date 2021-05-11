@@ -58,6 +58,13 @@ public type ProfileInfo = {
  abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
 };
 
+public type AllowanceBalance = {
+  /// Non-zero balance of the given amount (the allowance unit varies by use).
+  #nonZero : Nat;
+  /// Zero now, and will be zero until the IC reaches the given time.
+  #zeroUtil : Timestamp;
+};
+
 /// "Deeper" version of ProfileInfo.
 ///
 /// Gives Video- and ProfileInfos instead of merely Ids in the results.
@@ -75,6 +82,16 @@ public type ProfileInfoPlus = {
  /// ?false if not, and
  /// null if no specific requesting user is defined by context.
  abuseFlagFlag: ?Bool;
+ /// null if not giving a self view of the profile, otherwise, gives UserAllowances for userName.
+ allowances: ?UserAllowances;
+};
+
+/// Some user actions may not occur more than X number of times per 24 hours.
+/// Equivalently, these actions are limited by "allowances" that are replenished every 24 hours.
+/// These allowances are quasi-private information, since they leak user data, indirectly.
+public type UserAllowances = {
+  abuseFlags : AllowanceBalance ;
+  superLikes : AllowanceBalance ;
 };
 
 /// video information provided by front end to service, upon creation.
