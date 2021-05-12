@@ -77,11 +77,11 @@ public type ProfileInfoPlus = {
  hasPic: Bool;
  rewards: Nat;
  abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
- /// abuseFlagFlag is
+ /// viewerHasFlagged is
  /// ?true if we (the User requesting this profile) has flagged this profile for abuse.
  /// ?false if not, and
  /// null if no specific requesting user is defined by context.
- abuseFlagFlag: ?Bool;
+ viewerHasFlagged: ?Bool;
  /// null if not giving a self view of the profile, otherwise, gives UserAllowances for userName.
  allowances: ?UserAllowances;
 };
@@ -120,11 +120,11 @@ public type VideoInfo = {
  name: Text;
  chunkCount: Nat;
  abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
- /// abuseFlagFlag is
+ /// viewerHasFlagged is
  /// ?true if we (the User requesting this profile) has flagged this profile for abuse.
  /// ?false if not, and
  /// null if no specific requesting user is defined by context.
- abuseFlagFlag: ?Bool; // true if we (the User requesting this profile) has flagged this profile for abuse.
+ viewerHasFlagged: ?Bool; // true if we (the User requesting this profile) has flagged this profile for abuse.
 };
 
 public type VideoResult = (VideoInfo, ?VideoPic);

@@ -331,7 +331,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         hasPic = false;
         rewards = state.rewards.get(userId)!;
         abuseFlagCount = state.abuseFlagUsers.get1Size(userId) ; // count total for userId.
-        abuseFlagFlag = do ? { // if caller is non-null,
+        viewerHasFlagged = do ? { // if caller is non-null,
           state.abuseFlagUsers.isMember(caller!, userId) ; // check if we are there.
         };
         allowances = do ? { if (caller! == userId) {
@@ -794,7 +794,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         // This implementation makes public all users who flagged every video,
         // but if that information should be kept private, get video info
         // could return just whether the calling user flagged it.
-        abuseFlagFlag = do ? {
+        viewerHasFlagged = do ? {
           state.abuseFlagVideos.isMember(caller!, videoId) ;
         };
         abuseFlagCount = state.abuseFlagVideos.get1Size(videoId);
