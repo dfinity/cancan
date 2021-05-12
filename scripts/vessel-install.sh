@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BINDIR=$HOME/bin/
+BINDIR=$HOME/bin
 mkdir -p $BINDIR
 BIN=$BINDIR/vessel
 OS_FILENAME=linux64
