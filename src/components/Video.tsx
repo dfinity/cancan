@@ -73,7 +73,7 @@ function VideoBase(props: VideoProps) {
     videoInfo.superLikes.includes(userId)
   );
 
-  const videoIsFlagged = videoInfo.abuseFlagUsers.length >= VIDEO_BLUR_MIN;
+  const videoIsFlagged = videoInfo.abuseFlagCount >= VIDEO_BLUR_MIN;
 
   const videoRef = useRef<HTMLVideoElement>(null);
 

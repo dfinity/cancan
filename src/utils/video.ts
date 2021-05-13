@@ -74,7 +74,7 @@ async function uploadVideo(userId: string, file: File, caption: string) {
 
   await Promise.all(putChunkPromises);
 
-  return await checkVidFromIC(videoId);
+  return await checkVidFromIC(videoId, userId);
 }
 
 // This isn't Internet Computer specific, just a helper to generate an image
@@ -133,9 +133,9 @@ async function uploadVideoPic(videoId: string, file: number[]) {
 }
 
 // Gets videoInfo from the IC after we've uploaded
-async function checkVidFromIC(videoId: string) {
+async function checkVidFromIC(videoId: string, userId: string) {
   console.log("Checking canister for uploaded video...");
-  const resultFromCanCan = await getVideoInfo(videoId);
+  const resultFromCanCan = await getVideoInfo(userId, videoId);
   if (resultFromCanCan === null) {
     throw Error("Invalid video received from CanCan Canister");
   }

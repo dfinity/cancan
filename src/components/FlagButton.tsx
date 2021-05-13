@@ -10,11 +10,11 @@ import reportIcon from "../assets/images/icon-report.png";
 export default function FlagButton({ currentUserId, videoInfo }) {
   // Keep local track of whether video is flagged so we can update the state
   // immediately rather than wait for backend call.
-  const [localFlags, setLocalFlags] = useState(videoInfo.abuseFlagUsers.length);
-  // Keeps track of whether user has already flagged this video.
-  const [isActive, setActive] = useState(
-    videoInfo.abuseFlagUsers.includes(currentUserId)
+  const [localFlags, setLocalFlags] = useState(
+    Number(videoInfo.abuseFlagCount)
   );
+  // Keeps track of whether user has already flagged this video.
+  const [isActive, setActive] = useState(videoInfo.viewerHasFlagged);
   const handleClick = async () => {
     if (!isActive) {
       setActive(true);
