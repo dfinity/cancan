@@ -63,6 +63,8 @@ public type AllowanceBalance = {
   #nonZero : Nat;
   /// Zero now, and will be zero until the IC reaches the given time.
   #zeroUntil : Timestamp;
+  /// No allowance at all, ever.
+  #zeroForever
 };
 
 /// "Deeper" version of ProfileInfo.
@@ -132,6 +134,7 @@ public type VideoResults = [VideoResult];
 
 /// Notification messages
 public type Message = {
+  id: Nat;
     time: Timestamp;
     event: Event;
 };

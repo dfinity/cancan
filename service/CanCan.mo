@@ -68,6 +68,16 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
+  /// log the given event kind, with a unique ID and current time
+  func logEvent(ek : State.Event.EventKind) {
+    state.eventLog.add({
+                         id = state.eventCount ;
+                         time = timeNow_() ;
+                         kind = ek
+                       });
+    state.eventCount += 1;
+  };
+
   // responsible for adding metadata from the user to the state.
   // a null principal means that the username has no valid callers (yet), and the admin
   // must relate one or more principals to it.
@@ -82,10 +92,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         });
         // rewards init invariant: rewards is initialized to zero (is non-null).
         state.rewards.put(userName_, 0);
-        state.eventLog.add({
-          time = now;
-          kind = #createProfile({userName=userName_; pic=pic_})
-        });
+        logEvent(#createProfile({userName=userName_; pic=pic_}));
         state.access.userRole.put(userName_, #user);
         switch p {
           case null { }; // no related principals, yet.
@@ -271,15 +278,19 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
                          includePred : State.Event.Event -> Bool,
                          excludePred : State.Event.Event -> Bool,
   ) : Types.AllowanceBalance {
-    let now = timeNow_();
-    let matches = collectLogMatches(includePred, excludePred);
-    if (matches.size() < limitPerRecentDuration) {
-      #nonZero (limitPerRecentDuration - matches.size()) // total remaining.
+    if (limitPerRecentDuration == 0) {
+      #zeroForever
     } else {
-      assert matches.size() == limitPerRecentDuration; // we should not exceed the limit
-      let last = matches[0]; // last relevant event
-      let durationSinceLast = now - last.time; // already waited this long
-      #zeroUntil (now + Param.recentPastDuration - durationSinceLast) // total wait.
+      let now = timeNow_();
+      let matches = collectLogMatches(includePred, excludePred);
+      if (matches.size() < limitPerRecentDuration) {
+        #nonZero (limitPerRecentDuration - matches.size()) // total remaining.
+      } else {
+        // assert invariant: we do not exceed the limit.
+        assert matches.size() == limitPerRecentDuration;
+        let leastRecentTime = matches[matches.size() - 1].time;
+        #zeroUntil (leastRecentTime + Param.recentPastDuration) // total wait.
+      }
     }
   };
 
@@ -337,7 +348,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         allowances = do ? { if (caller! == userId) {
           getUserAllowances_(caller!)
         } else { null! } };
-      };
+      }
     }
   };
 
@@ -401,16 +412,14 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         state.rewards.put(sender, balSrc - amount);
         state.rewards.put(receiver, balTgt + amount);
 
+        logEvent(#rewardPointTransfer({sender = sender; receiver = receiver; amount = amount}));
         state.messages.put(receiver,
-           { time = timeNow_();
+           { id = state.eventCount;
+             time = timeNow_();
              event = #transferReward {
                rewards = amount;
              }
            });
-        state.eventLog.add({
-          time = timeNow_();
-          kind = #rewardPointTransfer({sender = sender; receiver = receiver; amount = amount})
-        });
 
       } else { return null }
     }
@@ -615,8 +624,10 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
                             )});*/
         let score = Option.get(state.rewards.get(vinfo.userId), 0);
         state.rewards.put(vinfo.userId, score + Param.rewardsForUploader);
+        state.eventCount += 1;
         state.messages.put(vinfo.userId,
-                           { time = now;
+                           { id = state.eventCount;
+                             time = now;
                              event = #uploadReward {
                                  rewards = Param.rewardsForUploader;
                                  videoId = video;
@@ -625,8 +636,10 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         for (id in superLikers.vals()) {
             let score = Option.get(state.rewards.get(id.user), 0);
             state.rewards.put(id.user, score + Param.rewardsForSuperliker);
+            state.eventCount += 1;
             state.messages.put(id.user,
-                               { time = now;
+                               { id = state.eventCount;
+                                 time = now;
                                  event = #superlikerReward {
                                      rewards = Param.rewardsForSuperliker;
                                      videoId = video;
@@ -671,26 +684,21 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
       if superLikes_ {
         if (getSuperLikeValidNow_(userId, videoId)) {
           state.superLikes.put(userId, videoId);
-          state.eventLog.add({ time = timeNow_();
-                               kind = #superLikeVideo({ source = userId ;
-                                                        target = videoId ;
-                                                        superLikes = true }
-                               )});
+          logEvent(#superLikeVideo({ source = userId ;
+                                     target = videoId ;
+                                     superLikes = true }
+                   ));
           checkEmitVideoViral_(videoId);
         } else {
-          state.eventLog.add({ time = timeNow_();
-                               kind = #superLikeVideoFail({ source = userId ;
-                                                            target = videoId }
-                               )});
+          logEvent(#superLikeVideoFail({ source = userId ;
+                                         target = videoId }));
           return null // fail
         }
       } else {
         state.superLikes.delete(userId, videoId);
-        state.eventLog.add({ time = timeNow_();
-                             kind = #superLikeVideo({ source = userId ;
-                                                      target = videoId ;
-                                                      superLikes = false }
-                             )});
+        logEvent(#superLikeVideo({ source = userId ;
+                                   target = videoId ;
+                                   superLikes = false }));
       }
     }
   };
@@ -712,11 +720,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
       } else {
         state.likes.delete(userId, videoId)
       };
-      state.eventLog.add({ time = timeNow_();
-                           kind = #likeVideo({ source = userId ;
-                                               target = videoId ;
-                                               likes = willLike_ }
-                           )});
+      logEvent(#likeVideo({ source = userId ;
+                            target = videoId ;
+                            likes = willLike_ }));
     }
   };
 
@@ -760,8 +766,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
                               viewCount = 0 ;
                             });
            state.uploaded.put(i.userId, videoId);
-           state.eventLog.add({ time = now;
-                                kind = #createVideo({info = i}) });
+           logEvent(#createVideo({info = i}));
            ?videoId
          };
     }
@@ -852,10 +857,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     (reporter : UserId, target : VideoId, abuseFlag : Bool) : async ?() {
     do ? {
       accessCheck(msg.caller, #update, #user reporter)!;
-      state.eventLog.add({ time = timeNow_();
-                           kind = #abuseFlag({ reporter = reporter ;
-                                               target = #video(target);
-                                               flag = abuseFlag })});
+      logEvent(#abuseFlag({ reporter = reporter ;
+                            target = #video(target);
+                            flag = abuseFlag }));
       if abuseFlag {
         state.abuseFlagVideos.put(reporter, target)
       } else {
@@ -870,10 +874,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     (reporter : UserId, target : UserId, abuseFlag : Bool) : async ?() {
     do ? {
       accessCheck(msg.caller, #update, #user reporter)!;
-      state.eventLog.add({ time = timeNow_();
-                           kind = #abuseFlag({ reporter = reporter ;
-                                               target = #user(target);
-                                               flag = abuseFlag })});
+      logEvent(#abuseFlag({ reporter = reporter ;
+                            target = #user(target);
+                            flag = abuseFlag }));
       if abuseFlag {
         state.abuseFlagUsers.put(reporter, target)
       } else {
