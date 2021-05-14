@@ -276,14 +276,13 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   };
 
   func computeAllowance_(limitPerRecentDuration : Nat,
-                         includePred : State.Event.Event -> Bool,
-                         excludePred : State.Event.Event -> Bool,
+                         collectEvent : State.Event.Event -> Bool,
   ) : Types.AllowanceBalance {
     if (limitPerRecentDuration == 0) {
       #zeroForever
     } else {
       let now = timeNow_();
-      let matches = collectLogMatches(includePred, excludePred);
+      let matches = collectLogMatches(collectEvent);
       if (matches.size() < limitPerRecentDuration) {
         #nonZero (limitPerRecentDuration - matches.size()) // total remaining.
       } else {
@@ -314,70 +313,47 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   };
 
   func getUserAllowances_(user: UserId) : Types.UserAllowances {
-    // to do --
     {
       abuseFlags = do {
-        // undoneTargets --- to correctly calculate in the presence of
-        // "false events" (undone events) we exclude superlikes or
-        // flags that have since been undone, by storing and recognizing them.
-        let undoneTargets = TrieMap.TrieMap<Types.ActionTarget, ()>(targetEqual, targetHash);
+        let targets = TrieMap.TrieMap<Types.ActionTarget, Bool>(targetEqual, targetHash);
         computeAllowance_(
           Param.maxRecentAbuseFlags,
           // true when we INCLUDE an event in the total
           func (ev: State.Event.Event) : Bool {
             switch (ev.kind) {
             case (#abuseFlag(af)) {
-                   af.flag and
-                   af.reporter == user
-                 };
+                   if (af.reporter != user) { return false };
+                   switch (targets.get(af.target)) {
+                     case null {
+                            targets.put(af.target, af.flag);
+                            af.flag
+                          };
+                     case (?b) { b }
+                   }};
             case _ { false };
             }
           },
-          // true when we EXCLUDE an event in the total (overrides INCLUDE being true):
-          func (ev: State.Event.Event) : Bool {
-            switch (ev.kind) {
-            case (#abuseFlag(af)) {
-                   if (af.reporter != user) { return true };
-                   if (not af.flag) {
-                     undoneTargets.put(af.target, ());
-                     true
-                   } else {
-                     undoneTargets.get(af.target) != null
-                   };
-                 };
-            case _ { false };
-            }
-          }
         )};
 
       superLikes = do {
-        let undoneTargets = TrieMap.TrieMap<Types.ActionTarget, ()>(targetEqual, targetHash);
+        let targets = TrieMap.TrieMap<Types.ActionTarget, Bool>(targetEqual, targetHash);
         computeAllowance_(
           Param.maxRecentSuperLikes,
           func (ev: State.Event.Event) : Bool {
             switch (ev.kind) {
             case (#superLikeVideo(slv)) {
-                   slv.superLikes and
-                   slv.source == user
-                 };
+                   if (slv.source != user) { return false };
+                   switch (targets.get(#video(slv.target))) {
+                     case null {
+                            targets.put(#video(slv.target), slv.superLikes);
+                            slv.superLikes
+                          };
+                     case (?b) { b }
+                   }};
             case _ { false };
             }
-          },
-          func (ev: State.Event.Event) : Bool {
-            switch (ev.kind) {
-            case (#superLikeVideo(slv)) {
-                   if (slv.source != user) { return true };
-                   if (not slv.superLikes) {
-                     undoneTargets.put(#video(slv.target), ());
-                     true
-                   } else {
-                     undoneTargets.get(#video(slv.target)) != null
-                   };
-                 };
-            case _ { false };
             }
-          });
-      }
+        )};
     }
   };
 
@@ -607,8 +583,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   /// more pre-emptive caching of what we learn from doing this linear scan.
   /// (Util this linear scan is too slow, let's avoid the complexity of more caching.)
   func collectLogMatches(
-    includePred : State.Event.Event -> Bool,
-    excludePred : State.Event.Event -> Bool,
+    collectEvent : State.Event.Event -> Bool,
   ) : [State.Event.Event] {
     let now = timeNow_();
     let notRecent = now - Param.recentPastDuration;
@@ -616,7 +591,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     label hugeLog
     for (ev in state.eventLog.revVals()) {
       if(ev.time <= notRecent){ break hugeLog };
-      if (not excludePred(ev) and includePred(ev)) {
+      if (collectEvent(ev)) {
         matches.add(ev)
       }
     };
