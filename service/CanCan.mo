@@ -1,5 +1,6 @@
 import Access "../backend/Access";
 import Array "mo:base/Array";
+import Hash "mo:base/Hash";
 import Base "../backend/Base";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
@@ -294,39 +295,89 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
+  // targetId -- for hashing the targets of abuse flags
+  func targetText(target : Types.ActionTarget) : Text {
+    switch target {
+    case (#video(i)) "#video=" # i;
+    case (#user(i)) "#user=" # i;
+    case _ { loop { assert false } };
+    }
+  };
+
+  // targetHash -- for collecting sets of targets, and doing set operations.
+  func targetHash(target : Types.ActionTarget) : Hash.Hash {
+    Text.hash(targetText(target))
+  };
+
+  func targetEqual(targ1 : Types.ActionTarget, targ2 : Types.ActionTarget) : Bool {
+    targ1 == targ2
+  };
+
   func getUserAllowances_(user: UserId) : Types.UserAllowances {
-    // to do -- properly handle undone flags and super-likes with excludePred,
-    // which should exclude old (outdated) superlikes or flags that have since been undone, later.
-    // (by returning false for excludePred, we withold the user's allowances more than necessary)
+    // to do --
     {
-      abuseFlags = computeAllowance_(
-        Param.maxRecentAbuseFlags,
-        func (ev: State.Event.Event) : Bool {
-          switch (ev.kind) {
+      abuseFlags = do {
+        // undoneTargets --- to correctly calculate in the presence of
+        // "false events" (undone events) we exclude superlikes or
+        // flags that have since been undone, by storing and recognizing them.
+        let undoneTargets = TrieMap.TrieMap<Types.ActionTarget, ()>(targetEqual, targetHash);
+        computeAllowance_(
+          Param.maxRecentAbuseFlags,
+          // true when we INCLUDE an event in the total
+          func (ev: State.Event.Event) : Bool {
+            switch (ev.kind) {
             case (#abuseFlag(af)) {
-              af.flag and
-              af.reporter == user
-            };
+                   af.flag and
+                   af.reporter == user
+                 };
             case _ { false };
+            }
+          },
+          // true when we EXCLUDE an event in the total (overrides INCLUDE being true):
+          func (ev: State.Event.Event) : Bool {
+            switch (ev.kind) {
+            case (#abuseFlag(af)) {
+                   if (af.reporter != user) { return true };
+                   if (not af.flag) {
+                     undoneTargets.put(af.target, ());
+                     true
+                   } else {
+                     undoneTargets.get(af.target) != null
+                   };
+                 };
+            case _ { false };
+            }
           }
-        },
-        func (ev: State.Event.Event) : Bool {
-          false
-        });
-      superLikes = computeAllowance_(
-        Param.maxRecentSuperLikes,
-        func (ev: State.Event.Event) : Bool {
-          switch (ev.kind) {
+        )};
+
+      superLikes = do {
+        let undoneTargets = TrieMap.TrieMap<Types.ActionTarget, ()>(targetEqual, targetHash);
+        computeAllowance_(
+          Param.maxRecentSuperLikes,
+          func (ev: State.Event.Event) : Bool {
+            switch (ev.kind) {
             case (#superLikeVideo(slv)) {
-              slv.superLikes and
-              slv.source == user
-            };
+                   slv.superLikes and
+                   slv.source == user
+                 };
             case _ { false };
-          }
-        },
-        func (ev: State.Event.Event) : Bool {
-          false
-        });
+            }
+          },
+          func (ev: State.Event.Event) : Bool {
+            switch (ev.kind) {
+            case (#superLikeVideo(slv)) {
+                   if (slv.source != user) { return true };
+                   if (not slv.superLikes) {
+                     undoneTargets.put(#video(slv.target), ());
+                     true
+                   } else {
+                     undoneTargets.get(#video(slv.target)) != null
+                   };
+                 };
+            case _ { false };
+            }
+          });
+      }
     }
   };
 
