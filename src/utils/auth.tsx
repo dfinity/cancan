@@ -6,6 +6,7 @@ import {
   KEY_LOCALSTORAGE_USER,
 } from "./index";
 
+import { actorController } from "./canister/actor";
 import { Identity } from "@dfinity/agent";
 import { ProfileInfoPlus } from "./canister/typings";
 
@@ -107,6 +108,14 @@ export function useProvideAuth(authClient): AuthContext {
       })();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (_identity && !_identity.getPrincipal().isAnonymous()) {
+      actorController.authenticateActor(_identity);
+    } else {
+      actorController.unauthenticateActor();
+    }
+  }, [_identity]);
 
   // Just creating variables here so that it's pretty below
   const identity = _identity;

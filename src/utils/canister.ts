@@ -15,9 +15,9 @@ import {
   VideoResults,
 } from "./canister/typings";
 import { unwrap } from "./index";
-import { baseActor } from "./canister/actor";
+import { actorController } from "./canister/actor";
 
-const CanCan = baseActor;
+const CanCan = actorController;
 
 export type Optional<Type> = [Type] | [];
 
@@ -40,7 +40,7 @@ export function getUserFromStorage(
 
 export async function getUserNameByPrincipal(principal: Principal) {
   const icUserName = unwrap<string>(
-    await CanCan.getUserNameByPrincipal(principal)
+    await CanCan.actor.getUserNameByPrincipal(principal)
   )!;
   return icUserName;
 }
@@ -53,7 +53,7 @@ export async function createUser(
     throw Error("trying to create user without principal");
   }
   const profile = unwrap<ProfileInfoPlus>(
-    await CanCan.createProfile(userId, [])
+    await CanCan.actor.createProfile(userId, [])
   );
   if (profile) {
     return profile;
@@ -86,13 +86,15 @@ export async function findOrCreateUser(
 }
 
 export async function isDropDay(): Promise<boolean> {
-  return Boolean(unwrap<boolean>(await CanCan.isDropDay()));
+  return Boolean(unwrap<boolean>(await CanCan.actor.isDropDay()));
 }
 
 export async function getUserFromCanister(
   userId: string
 ): Promise<ProfileInfoPlus | null> {
-  const icUser = unwrap<ProfileInfoPlus>(await CanCan.getProfilePlus(userId));
+  const icUser = unwrap<ProfileInfoPlus>(
+    await CanCan.actor.getProfilePlus(userId)
+  );
   if (icUser) {
     return icUser;
   } else {
@@ -107,7 +109,7 @@ export async function getSearchVideos(
 ): Promise<VideoInfo[]> {
   // @ts-ignore
   const videos = unwrap<VideoResults>(
-    await CanCan.getSearchVideos(userId, terms, limit)
+    await CanCan.actor.getSearchVideos(userId, terms, limit)
   );
   if (videos !== null) {
     const unwrappedVideos = videos.map((v) => v[0]);
@@ -118,7 +120,9 @@ export async function getSearchVideos(
 }
 
 export async function getFeedVideos(userId: string): Promise<VideoInfo[]> {
-  const videos = unwrap<VideoResults>(await CanCan.getFeedVideos(userId, []));
+  const videos = unwrap<VideoResults>(
+    await CanCan.actor.getFeedVideos(userId, [])
+  );
   if (videos !== null) {
     const unwrappedVideos = videos.map((v) => v[0]);
     return unwrappedVideos;
@@ -128,7 +132,7 @@ export async function getFeedVideos(userId: string): Promise<VideoInfo[]> {
 }
 
 export async function getVideoInfo(videoId: string) {
-  const videoInfo = unwrap(await CanCan.getVideoInfo(videoId));
+  const videoInfo = unwrap(await CanCan.actor.getVideoInfo(videoId));
   if (videoInfo !== null) {
     return videoInfo;
   } else {
@@ -136,12 +140,12 @@ export async function getVideoInfo(videoId: string) {
   }
 }
 export async function getProfilePic(userId: string) {
-  const profilePic = unwrap(await CanCan.getProfilePic(userId));
+  const profilePic = unwrap(await CanCan.actor.getProfilePic(userId));
   return profilePic;
 }
 
 export async function createVideo(videoInit: VideoInit): Promise<string> {
-  const videoId = unwrap<string>(await CanCan.createVideo(videoInit));
+  const videoId = unwrap<string>(await CanCan.actor.createVideo(videoInit));
   if (videoId) {
     return videoId;
   } else {
@@ -155,7 +159,7 @@ export async function follow(
   willFollow: boolean
 ) {
   try {
-    await CanCan.putProfileFollow(userToFollow, follower, willFollow);
+    await CanCan.actor.putProfileFollow(userToFollow, follower, willFollow);
   } catch (error) {
     console.error(error);
   }
@@ -163,7 +167,7 @@ export async function follow(
 
 export async function like(user: string, videoId: string, willLike: boolean) {
   try {
-    await CanCan.putProfileVideoLike(user, videoId, willLike);
+    await CanCan.actor.putProfileVideoLike(user, videoId, willLike);
   } catch (error) {
     console.error(error);
   }
@@ -175,7 +179,7 @@ export async function superLike(
   willSuperLike: boolean
 ) {
   try {
-    await CanCan.putSuperLike(user, videoId, willSuperLike);
+    await CanCan.actor.putSuperLike(user, videoId, willSuperLike);
   } catch (error) {
     console.error(error);
   }
@@ -187,7 +191,7 @@ export async function getVideoChunks(videoInfo: VideoInfo): Promise<string> {
   const chunkBuffers: Buffer[] = [];
   const chunksAsPromises: Array<Promise<Optional<number[]>>> = [];
   for (let i = 1; i <= Number(chunkCount.toString()); i++) {
-    chunksAsPromises.push(CanCan.getVideoChunk(videoId, i));
+    chunksAsPromises.push(CanCan.actor.getVideoChunk(videoId, i));
   }
   const nestedBytes: number[][] = (await Promise.all(chunksAsPromises))
     .map(unwrap)
@@ -208,15 +212,15 @@ export async function putVideoChunk(
   chunkNum: number,
   chunkData: number[]
 ) {
-  return CanCan.putVideoChunk(videoId, chunkNum, chunkData);
+  return CanCan.actor.putVideoChunk(videoId, chunkNum, chunkData);
 }
 
 export async function putVideoPic(videoId: string, file: number[]) {
-  return CanCan.putVideoPic(videoId, [file]);
+  return CanCan.actor.putVideoPic(videoId, [file]);
 }
 
 export async function getVideoPic(videoId: string): Promise<number[]> {
-  const icResponse = await CanCan.getVideoPic(videoId);
+  const icResponse = await CanCan.actor.getVideoPic(videoId);
   const pic = unwrap<number[]>(icResponse);
   if (pic !== null) {
     return pic;
@@ -237,11 +241,11 @@ export function getLocationCanisterPrincipal(location: Location): Principal {
 }
 
 export async function checkUsername(username: string): Promise<boolean> {
-  return await CanCan.checkUsernameAvailable(username);
+  return await CanCan.actor.checkUsernameAvailable(username);
 }
 
 export async function getMessages(username: string): Promise<Message[]> {
-  const messages = await CanCan.getMessages(username);
+  const messages = await CanCan.actor.getMessages(username);
   return messages;
 }
 
@@ -250,7 +254,7 @@ export async function putRewardTransfer(
   recipient: string,
   amount: BigInt
 ) {
-  return await CanCan.putRewardTransfer(sender, recipient, amount);
+  return await CanCan.actor.putRewardTransfer(sender, recipient, amount);
 }
 
 export async function putAbuseFlagVideo(
@@ -258,5 +262,5 @@ export async function putAbuseFlagVideo(
   target: string,
   shouldFlag: boolean
 ) {
-  return await CanCan.putAbuseFlagVideo(reporter, target, shouldFlag);
+  return await CanCan.actor.putAbuseFlagVideo(reporter, target, shouldFlag);
 }
