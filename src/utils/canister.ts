@@ -39,7 +39,6 @@ export function getUserFromStorage(
 }
 
 export async function getUserNameByPrincipal(principal: Principal) {
-  console.log("hello", CanCan.isReady);
   const icUserName = unwrap<string>(
     await CanCan.actor.getUserNameByPrincipal(principal)
   )!;
