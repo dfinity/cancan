@@ -111,7 +111,12 @@ export function useProvideAuth(authClient): AuthContext {
 
   useEffect(() => {
     if (_identity && !_identity.getPrincipal().isAnonymous()) {
-      actorController.authenticateActor(_identity);
+      // The auth client isn't ready to make requests until it's completed the
+      // async authenticate actor method.
+      setAuthClientReady(false);
+      actorController.authenticateActor(_identity).then(() => {
+        setAuthClientReady(true);
+      });
     } else {
       actorController.unauthenticateActor();
     }
@@ -146,7 +151,9 @@ export function useProvideAuth(authClient): AuthContext {
 
   return {
     isAuthenticated,
-    isAuthClientReady,
+    // TODO: Since we're also waiting on actor being ready too, this is not well
+    // named anymore
+    isAuthClientReady: isAuthClientReady && actorController.isReady,
     hasCanCanAccount: user !== undefined,
     logIn,
     logOut,

@@ -29,12 +29,6 @@
     }
   },
   "networks": {
-    "ic": {
-      "providers": [
-        "https://gw.dfinity.network"
-      ],
-      "type": "persistent"
-    },
     "alpha": {
       "providers": [
         "https://mainnet.dfinity.network"
@@ -46,5 +40,5 @@
       "type": "ephemeral"
     }
   },
-  "dfx": "0.7.0-beta.6"
+  "dfx": "0.7.0"
 }

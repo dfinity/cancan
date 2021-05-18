@@ -21,7 +21,7 @@ function createActor(identity?: Identity) {
     agent,
     canisterId: CanCan_canister_id,
   });
-  return actor;
+  return { actor, agent };
 }
 
 /*
@@ -32,9 +32,16 @@ function createActor(identity?: Identity) {
 class ActorController {
   _actor: _SERVICE;
   _isAuthenticated: boolean = false;
+  isReady: boolean = false;
 
   constructor() {
-    this._actor = createActor();
+    this._actor = this.initBaseActor();
+  }
+
+  initBaseActor() {
+    const { agent, actor } = createActor();
+    agent.fetchRootKey().then(() => (this.isReady = true));
+    return actor;
   }
 
   /*
@@ -48,19 +55,21 @@ class ActorController {
    * Once a user has authenticated and has an identity pass this identity
    * to create a new actor with it, so they pass their Principal to the backend.
    */
-  authenticateActor(identity: Identity) {
+  async authenticateActor(identity: Identity) {
     // If the actor is already authenticated, no need to create a new actor.
     if (this._isAuthenticated) return;
-    this._actor = createActor(identity);
+    const { agent, actor } = createActor(identity);
+    await agent.fetchRootKey();
+    this._actor = actor;
     this._isAuthenticated = true;
+    this.isReady = true;
   }
 
   /*
    * If a user unauthenticates, recreate the actor without an identity.
    */
   unauthenticateActor() {
-    this._actor = createActor();
-    this._isAuthenticated = false;
+    this._actor = this.initBaseActor();
   }
 }
 
