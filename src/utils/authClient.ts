@@ -1,9 +1,11 @@
-import { Identity } from "@dfinity/agent";
-import { AuthClient } from "@dfinity/auth-client";
+import { Identity } from '@dfinity/agent';
+import { AuthClient } from '@dfinity/auth-client';
 
 // Where the IDP should be servied from
 const IDENTITY_URL =
-  process.env.REACT_APP_INTERNET_IDENTITY_URL || "https://identity.ic0.app";
+  new URLSearchParams(document.location.search).get('internetIdentityUrl') ||
+  process.env.REACT_APP_INTERNET_IDENTITY_URL ||
+  'https://identity.ic0.app';
 
 /*
  * A simple wrapper for the official auth client to initialize it and wrap
@@ -35,7 +37,7 @@ class AuthClientWrapper {
   }
 
   async logout() {
-    return this.authClient?.logout({ returnTo: "/" });
+    return this.authClient?.logout({ returnTo: '/' });
   }
 
   async getIdentity() {
