@@ -1,6 +1,10 @@
 import { Identity } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 
+// Where the IDP should be servied from
+const IDENTITY_URL =
+  process.env.REACT_APP_INTERNET_IDENTITY_URL || "https://identity.ic0.app";
+
 /*
  * A simple wrapper for the official auth client to initialize it and wrap
  * some of the methods in promises
@@ -22,6 +26,7 @@ class AuthClientWrapper {
   async login(): Promise<Identity | undefined> {
     return new Promise(async (resolve) => {
       await this.authClient?.login({
+        identityProvider: IDENTITY_URL,
         onSuccess: async () => {
           resolve(this.authClient?.getIdentity());
         },
