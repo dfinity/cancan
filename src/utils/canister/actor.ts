@@ -8,9 +8,11 @@ import _SERVICE from "./typings";
 import dfxConfig from "../../../dfx.json";
 
 const DFX_NETWORK = process.env.DFX_NETWORK || "local";
+const isLocalEnv = DFX_NETWORK === "local";
+
 function getHost() {
   // Setting host to undefined will default to the window location 👍🏻
-  return DFX_NETWORK === "local" ? dfxConfig.networks.local.bind : undefined;
+  return isLocalEnv ? dfxConfig.networks.local.bind : undefined;
 }
 
 const host = getHost();
@@ -40,7 +42,10 @@ class ActorController {
 
   initBaseActor() {
     const { agent, actor } = createActor();
-    agent.fetchRootKey().then(() => (this.isReady = true));
+    // The root key only has to be fetched for local development environments
+    if (isLocalEnv) {
+      agent.fetchRootKey().then(() => (this.isReady = true));
+    }
     return actor;
   }
 
@@ -59,7 +64,9 @@ class ActorController {
     // If the actor is already authenticated, no need to create a new actor.
     if (this._isAuthenticated) return;
     const { agent, actor } = createActor(identity);
-    await agent.fetchRootKey();
+    if (isLocalEnv) {
+      await agent.fetchRootKey();
+    }
     this._actor = actor;
     this._isAuthenticated = true;
     this.isReady = true;
