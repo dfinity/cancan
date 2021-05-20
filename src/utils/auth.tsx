@@ -12,7 +12,7 @@ import { ProfileInfoPlus } from "./canister/typings";
 
 export interface AuthContext {
   isAuthenticated: boolean;
-  isAuthClientReady: boolean;
+  isAuthReady: boolean;
   hasCanCanAccount: boolean;
   identity?: Identity;
   logIn: () => void;
