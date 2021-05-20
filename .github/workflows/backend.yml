@@ -38,11 +38,9 @@ jobs:
         (for f in service/tests/*.test.sh; do
           echo "==== Run test $f ===="
           dfx canister call CanCan reset 'variant { script = 0 }'
-          ic-repl -r http://localhost:8000 "$f" || ( \
-             dfx canister call CanCan getEventLog '()' && \
-             dfx canister call CanCan getAccessLog '()' && \
-             && \
-             exit)
+          ic-repl -r http://localhost:8000 "$f"
+          dfx canister call CanCan getEventLog '()'
+          dfx canister call CanCan getAccessLog '()'
         done)
     - name: stop dfx
       run: |
