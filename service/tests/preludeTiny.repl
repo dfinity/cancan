@@ -1,7 +1,7 @@
 //import CanCan = "ai7t5-aibaq-aaaaa-aaaaa-c";
 import CanCan = "rwlgt-iiaaa-aaaaa-aaaaa-cai";
 // assume the same identity as a `dfx call` command
-identity default "/home/runner/.config/dfx/identity/default/identity.pem"
+identity default "/home/runner/.config/dfx/identity/default/identity.pem";
 call CanCan.createTestData(
   vec { "alice"; "bob"},
   vec {
