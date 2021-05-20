@@ -35,11 +35,11 @@ jobs:
         dfx deploy CanCan
     - name: Test
       run: |
-        for f in service/tests/*.test.sh; do
+        (for f in service/tests/*.test.sh; do
           echo "==== Run test $f ===="
           dfx canister call CanCan reset 'variant { script = 0 }'
-          ic-repl -r http://localhost:9000 "$f" || break
-        done
+          ic-repl -r http://localhost:8000 "$f" || exit
+        done)
     - name: stop dfx
       run: |
         echo "dfx stop"
