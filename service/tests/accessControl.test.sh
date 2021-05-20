@@ -1,6 +1,6 @@
 #!ic-repl -r http://localhost:8000
 
-import CanCan = "rrkah-fqaaa-aaaaa-aaaaq-cai";
+import CanCan = "rwlgt-iiaaa-aaaaa-aaaaa-cai";
 
 identity Alice;
 
