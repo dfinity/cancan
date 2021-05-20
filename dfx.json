@@ -24,7 +24,7 @@
     },
     "start": {
       "address": "127.0.0.1",
-      "port": 9000,
+      "port": 8000,
       "serve_root": "build"
     }
   },
@@ -42,7 +42,7 @@
       "type": "persistent"
     },
     "local": {
-      "bind": "127.0.0.1:9000",
+      "bind": "127.0.0.1:8000",
       "type": "ephemeral"
     }
   },
