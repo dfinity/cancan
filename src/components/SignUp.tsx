@@ -32,7 +32,7 @@ export function SignUp() {
   // with all the user's data. Show a loading message between these async
   // backend calls happening.
   useEffect(() => {
-    if (!auth.isAuthClientReady) return;
+    if (!auth.isAuthReady) return;
     if (auth.isAuthenticated && auth.identity !== undefined) {
       setIsCheckingICForUser(true);
       getUserNameByPrincipal(auth.identity.getPrincipal()).then((username) => {
@@ -50,7 +50,7 @@ export function SignUp() {
         }
       });
     }
-  }, [auth.isAuthClientReady, auth.isAuthenticated, auth.identity]);
+  }, [auth.isAuthReady, auth.isAuthenticated, auth.identity]);
 
   // Submit the form to signup with a new username, the backend ensures that
   // the username is available.
