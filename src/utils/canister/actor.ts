@@ -61,8 +61,6 @@ class ActorController {
    * to create a new actor with it, so they pass their Principal to the backend.
    */
   async authenticateActor(identity: Identity) {
-    // If the actor is already authenticated, no need to create a new actor.
-    if (this._isAuthenticated) return;
     const { agent, actor } = createActor(identity);
     if (isLocalEnv) {
       await agent.fetchRootKey();

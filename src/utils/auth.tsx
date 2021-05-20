@@ -151,8 +151,6 @@ export function useProvideAuth(authClient): AuthContext {
 
   return {
     isAuthenticated,
-    // TODO: Since we're also waiting on actor being ready too, this is not well
-    // named anymore
     isAuthClientReady: isAuthClientReady && actorController.isReady,
     hasCanCanAccount: user !== undefined,
     logIn,
