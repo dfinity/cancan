@@ -25,13 +25,7 @@ function wrapRouteWithFade(Component) {
 }
 
 export function AppRouter() {
-  const {
-    user,
-    setUser,
-    isAuthenticated,
-    isAuthClientReady,
-    logOut,
-  } = useAuth();
+  const { user, setUser, isAuthenticated, isAuthReady, logOut } = useAuth();
 
   return (
     <Router>
@@ -39,7 +33,7 @@ export function AppRouter() {
         {/* Root route, decides whether to redirect someone to feed, signup,
             or authorize, based on app state, only when auth client is ready */}
         <Route exact path="/">
-          {isAuthClientReady &&
+          {isAuthReady &&
             (isAuthenticated && user ? (
               <Redirect to={{ pathname: "/feed" }} />
             ) : isAuthenticated ? (
