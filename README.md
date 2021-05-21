@@ -63,10 +63,3 @@ Now you can make changes to any frontend code and see instant updates, in many c
 
 Clone and setup [the project](https://github.com/dfinity/internet-identity) and make sure that `internet_identity` is deployed, and you have the front-end available. That should allow you to do auth locally to try out the new Internet Identity service. For production, we will probably configure `identity.ic0.app` to be running this canister, but for now this is how to get it running.
 
-## TODO
-
-- see [issues](https://github.com/dfinity/cancan/issues)
-
-## Deploying to Mainnet (Beta)
-
-**TBD**
