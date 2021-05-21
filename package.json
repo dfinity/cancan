@@ -21,10 +21,10 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@dfinity/agent": "^0.8.8",
-    "@dfinity/auth-client": "^0.8.8",
-    "@dfinity/authentication": "^0.8.8",
-    "@dfinity/identity": "^0.8.8",
+    "@dfinity/agent": "^0.8.9",
+    "@dfinity/auth-client": "^0.8.9",
+    "@dfinity/authentication": "^0.8.9",
+    "@dfinity/identity": "^0.8.9",
     "lodash.debounce": "^4.0.8",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",

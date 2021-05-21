@@ -6,12 +6,13 @@ import {
   KEY_LOCALSTORAGE_USER,
 } from "./index";
 
+import { actorController } from "./canister/actor";
 import { Identity } from "@dfinity/agent";
 import { ProfileInfoPlus } from "./canister/typings";
 
 export interface AuthContext {
   isAuthenticated: boolean;
-  isAuthClientReady: boolean;
+  isAuthReady: boolean;
   hasCanCanAccount: boolean;
   identity?: Identity;
   logIn: () => void;
@@ -108,6 +109,19 @@ export function useProvideAuth(authClient): AuthContext {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (_identity && !_identity.getPrincipal().isAnonymous()) {
+      // The auth client isn't ready to make requests until it's completed the
+      // async authenticate actor method.
+      setAuthClientReady(false);
+      actorController.authenticateActor(_identity).then(() => {
+        setAuthClientReady(true);
+      });
+    } else {
+      actorController.unauthenticateActor();
+    }
+  }, [_identity]);
+
   // Just creating variables here so that it's pretty below
   const identity = _identity;
   const isAuthenticated = isAuthenticatedLocal;
@@ -137,7 +151,7 @@ export function useProvideAuth(authClient): AuthContext {
 
   return {
     isAuthenticated,
-    isAuthClientReady,
+    isAuthReady: isAuthClientReady && actorController.isReady,
     hasCanCanAccount: user !== undefined,
     logIn,
     logOut,
