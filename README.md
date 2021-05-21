@@ -59,9 +59,9 @@ Your default browser will open (or focus) a tab at `localhost:3000`, to which yo
 
 Now you can make changes to any frontend code and see instant updates, in many cases not even requiring a page refresh, so UI state is preserved between changes. Occasionally adding a CSS rule won't trigger an update, and the user has to manually refresh to see those changes.
 
-## Internet Identity (the app formerly known as IDP) Locally
+## Internet Identity Locally
 
-Clone and setup [the project](https://github.com/dfinity/idp-service) and make sure that the `idp_service` is deployed, and you have the front-end available. then change our `DEFAULT_IDP_URL` to reflect where it is running. That should allow you to do auth locally to try out new IDP. For production, we will probably configure `auth.ic0.app` to be running this canister, but for now this is how to get it running.
+Clone and setup [the project](https://github.com/dfinity/internet-identity) and make sure that `internet_identity` is deployed, and you have the front-end available. That should allow you to do auth locally to try out the new Internet Identity service. For production, we will probably configure `identity.ic0.app` to be running this canister, but for now this is how to get it running.
 
 ## TODO
 
