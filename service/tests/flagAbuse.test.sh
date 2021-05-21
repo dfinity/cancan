@@ -29,7 +29,7 @@ assert _ ~= opt record { abuseFlags = 0 : nat };
 //
 call CanCan.putAbuseFlagVideo("alice", "bob-fish0-0", true);
 call CanCan.getProfileInfo("bob");
-assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
+// assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
 call CanCan.getVideoInfo("bob-fish0-0");
 // assert _ ~= opt record { abuseFlags = 1 : nat };
 
