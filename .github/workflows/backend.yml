@@ -32,15 +32,13 @@ jobs:
         dfx cache install
         # cp -f $HOME/bin/moc $HOME/.cache/dfinity/versions/$DFX_VERSION/moc
         dfx start --background
-        dfx deploy CanCan
+        dfx deploy --no-wallet CanCan
     - name: Test
       run: |
         (for f in service/tests/*.test.sh; do
           echo "==== Run test $f ===="
-          dfx canister call CanCan reset 'variant { script = 0 }'
-          ic-repl -r http://localhost:8000 "$f"
-          dfx canister call CanCan getEventLog '()'
-          dfx canister call CanCan getAccessLog '()'
+          dfx canister --no-wallet call CanCan reset 'variant { script = 0 }'
+          ic-repl -r http://localhost:8000 "$f" || exit
         done)
     - name: stop dfx
       run: |
