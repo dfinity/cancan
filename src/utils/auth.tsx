@@ -6,12 +6,13 @@ import {
   KEY_LOCALSTORAGE_USER,
 } from "./index";
 
+import { actorController } from "./canister/actor";
 import { Identity } from "@dfinity/agent";
 import { ProfileInfoPlus } from "./canister/typings";
 
 export interface AuthContext {
   isAuthenticated: boolean;
-  isAuthClientReady: boolean;
+  isAuthReady: boolean;
   hasCanCanAccount: boolean;
   identity?: Identity;
   logIn: () => void;
@@ -43,6 +44,10 @@ export function useProvideAuth(authClient): AuthContext {
     if (lsUser) {
       setUser(lsUser);
       setIsAuthenticatedLocal(true);
+      // Check to make sure your local storage user exists on the backend, and
+      // log out if it doesn't (this is when you have your user stored in local
+      // storage but the user was cleared from the backend)
+      getUserFromCanister(lsUser.userName).then((user_) => !user_ && logOut());
       return () => void 0;
     }
   };
@@ -55,7 +60,9 @@ export function useProvideAuth(authClient): AuthContext {
       ([identity, isAuthenticated]) => {
         setIsAuthenticatedLocal(isAuthenticated || false);
         _setIdentity(identity);
-        setUserFromLocalStorage();
+        if (isAuthenticated) {
+          setUserFromLocalStorage();
+        }
         setAuthClientReady(true);
       }
     );
@@ -102,12 +109,25 @@ export function useProvideAuth(authClient): AuthContext {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (_identity && !_identity.getPrincipal().isAnonymous()) {
+      // The auth client isn't ready to make requests until it's completed the
+      // async authenticate actor method.
+      setAuthClientReady(false);
+      actorController.authenticateActor(_identity).then(() => {
+        setAuthClientReady(true);
+      });
+    } else {
+      actorController.unauthenticateActor();
+    }
+  }, [_identity]);
+
   // Just creating variables here so that it's pretty below
   const identity = _identity;
   const isAuthenticated = isAuthenticatedLocal;
 
-  // Login to the identity provider by sending user to the IDP and logging
-  // them in.
+  // Login to the identity provider by sending user to Internet Identity
+  // and logging them in.
   const logIn = async function (): Promise<void> {
     if (!authClient) return;
     await authClient.login();
@@ -116,7 +136,7 @@ export function useProvideAuth(authClient): AuthContext {
       setIsAuthenticatedLocal(true);
       _setIdentity(identity);
     } else {
-      console.error("Could not get identity from identity provider");
+      console.error("Could not get identity from internet identity");
     }
   };
 
@@ -124,13 +144,14 @@ export function useProvideAuth(authClient): AuthContext {
   function logOut() {
     setUser(undefined);
     setIsAuthenticatedLocal(false);
+    localStorage.removeItem(KEY_LOCALSTORAGE_USER);
     if (!authClient.ready) return;
     authClient.logout();
   }
 
   return {
     isAuthenticated,
-    isAuthClientReady,
+    isAuthReady: isAuthClientReady && actorController.isReady,
     hasCanCanAccount: user !== undefined,
     logIn,
     logOut,

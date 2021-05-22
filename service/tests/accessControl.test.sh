@@ -1,4 +1,4 @@
-#!ic-repl -r http://localhost:9000
+#!ic-repl -r http://localhost:8000
 
 import CanCan = "rrkah-fqaaa-aaaaa-aaaaq-cai";
 
