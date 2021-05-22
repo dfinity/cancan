@@ -92,7 +92,9 @@ export async function isDropDay(): Promise<boolean> {
 export async function getUserFromCanister(
   userId: string
 ): Promise<ProfileInfoPlus | null> {
-  const icUser = unwrap<ProfileInfoPlus>(await CanCan.getProfilePlus(userId));
+  const icUser = unwrap<ProfileInfoPlus>(
+    await CanCan.getProfilePlus([userId], userId)
+  );
   if (icUser) {
     return icUser;
   } else {
@@ -127,8 +129,8 @@ export async function getFeedVideos(userId: string): Promise<VideoInfo[]> {
   }
 }
 
-export async function getVideoInfo(videoId: string) {
-  const videoInfo = unwrap(await CanCan.getVideoInfo(videoId));
+export async function getVideoInfo(userId: string, videoId: string) {
+  const videoInfo = unwrap(await CanCan.getVideoInfo([userId], videoId));
   if (videoInfo !== null) {
     return videoInfo;
   } else {

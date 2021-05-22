@@ -180,7 +180,10 @@ export default interface _SERVICE {
   getMessages: (arg_0: UserId_3) => Promise<[] | [Message]>;
   getProfileInfo: (arg_0: UserId_3) => Promise<[] | [ProfileInfo]>;
   getProfilePic: (arg_0: UserId_3) => Promise<[] | [ProfilePic]>;
-  getProfilePlus: (arg_0: UserId_3) => Promise<[] | [ProfileInfoPlus]>;
+  getProfilePlus: (
+    arg_0: [] | [UserId_2],
+    arg_1: UserId_3
+  ) => Promise<[] | [ProfileInfoPlus]>;
   getProfileVideos: (
     arg_0: UserId_3,
     arg_1: [] | [number]
@@ -200,7 +203,10 @@ export default interface _SERVICE {
     arg_0: VideoId_3,
     arg_1: number
   ) => Promise<[] | [Array<number>]>;
-  getVideoInfo: (arg_0: VideoId_3) => Promise<[] | [VideoInfo]>;
+  getVideoInfo: (
+    arg_0: [] | [UserId_2],
+    arg_1: VideoId_3
+  ) => Promise<[] | [VideoInfo]>;
   getVideoPic: (arg_0: VideoId_3) => Promise<[] | [VideoPic]>;
   getVideos: () => Promise<[] | [VideoInfo]>;
   isDropDay: () => Promise<[] | [boolean]>;
