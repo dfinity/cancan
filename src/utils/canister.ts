@@ -132,7 +132,7 @@ export async function getFeedVideos(userId: string): Promise<VideoInfo[]> {
 }
 
 export async function getVideoInfo(userId: string, videoId: string) {
-  const videoInfo = unwrap(await CanCan.getVideoInfo([userId], videoId));
+  const videoInfo = unwrap(await CanCan.actor.getVideoInfo([userId], videoId));
   if (videoInfo !== null) {
     return videoInfo;
   } else {
