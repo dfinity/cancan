@@ -35,7 +35,7 @@ call CanCan.createVideo(record
                           tags = vec { };
                           chunkCount = 1 });
 assert _ == (null : opt null);
-call CanCan.getVideoInfo("alice-cat0-0"); // ok
+call CanCan.getVideoInfo(opt "bob", "alice-cat0-0"); // ok
 assert _ != (null : opt null);
 
 call CanCan.putSuperLike("bob", "alice-cat0-0", true); // ok
