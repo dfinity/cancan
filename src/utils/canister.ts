@@ -93,7 +93,7 @@ export async function getUserFromCanister(
   userId: string
 ): Promise<ProfileInfoPlus | null> {
   const icUser = unwrap<ProfileInfoPlus>(
-    await CanCan.getProfilePlus([userId], userId)
+    await CanCan.actor.getProfilePlus([userId], userId)
   );
   if (icUser) {
     return icUser;
