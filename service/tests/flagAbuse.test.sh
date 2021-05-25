@@ -22,7 +22,7 @@ load "preludeTiny.repl";
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
 call CanCan.getVideoInfo(opt "bob", "bob-fish0-0");
-assert _ ~= opt record { abuseFlags = 0 : nat };
+assert _ ~= opt record { abuseFlagCount = 0 : nat };
 
 //
 // Alice flags bob's fish0 video.
@@ -31,7 +31,7 @@ call CanCan.putAbuseFlagVideo("alice", "bob-fish0-0", true);
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
 call CanCan.getVideoInfo(opt "bob", "bob-fish0-0");
-assert _ ~= opt record { abuseFlags = 1 : nat };
+assert _ ~= opt record { abuseFlagCount = 1 : nat };
 
 //
 // Alice cannot add more than a single flag.
@@ -41,7 +41,7 @@ call CanCan.putAbuseFlagVideo("alice", "bob-fish0-0", true);
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
 call CanCan.getVideoInfo(opt "alice", "bob-fish0-0");
-assert _ ~= opt record { abuseFlags = 1 : nat };
+assert _ ~= opt record { abuseFlagCount = 1 : nat };
 
 //
 // Once bob also flags fish0, it has 2 flags,
@@ -53,4 +53,4 @@ assert _ ~= opt record { uploadedVideos = vec { } }; /* REDACTED! */
 call CanCan.getProfilePlus(opt "bob", "bob");
 assert _ ~= opt record { uploadedVideos = vec { } }; /* REDACTED! */
 call CanCan.getVideoInfo(opt "bob", "bob-fish0-0");
-assert _ ~= opt record { abuseFlags = 2 : nat };
+assert _ ~= opt record { abuseFlagCount = 2 : nat };
