@@ -55,19 +55,19 @@ call CanCan.doDemo(vec {
 });
 // exceed 10 superlikes
 call CanCan.getSuperLikeValidNow("alice", "alice-dog4-0");
-assert _ == false;
+assert _ == opt false;
 
 // okay to like an already liked video
 call CanCan.getSuperLikeValidNow("alice", "alice-dog2-0");
-assert _ == true;
+assert _ == opt true;
 
 // remove a superlike
 call CanCan.putSuperLike("alice", "bob-fish5-0", false);
 call CanCan.getSuperLikeValidNow("alice", "alice-dog4-0");
-assert _ == true;
+assert _ == opt true;
 call CanCan.putSuperLike("alice", "alice-dog4-0", true);
 assert _ == opt null;
 
 // exceed quota again
 call CanCan.getSuperLikeValidNow("alice", "bob-fish5-0");
-assert _ == false;
+assert _ == opt false;
