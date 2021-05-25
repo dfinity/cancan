@@ -3,7 +3,7 @@
 BINDIR=$HOME/bin
 mkdir -p $BINDIR
 IC_BIN=$BINDIR/ic-repl
-VERSION=2021-05-02
+VERSION=2021-05-19
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
         wget --output-document $IC_BIN https://github.com/chenyan2002/ic-repl/releases/download/$VERSION/ic-repl-macos
