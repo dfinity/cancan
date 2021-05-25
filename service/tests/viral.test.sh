@@ -57,12 +57,14 @@ assert _ ~= opt record { rewards = 60 : nat };
 call CanCan.getMessages("bob");
 assert _ == opt vec {
     record {
+      id = 26 : nat;
       time = 0 : int;
       event = variant {
         uploadReward = record { rewards = 50 : nat; videoId = "bob-fish0-0" }
       };
     };
     record {
+      id = 31 : nat;
       time = 0 : int;
       event = variant {
         superlikerReward = record { rewards = 10 : nat; videoId = "bob-fish0-0" }
