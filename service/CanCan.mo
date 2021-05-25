@@ -1,5 +1,6 @@
 import Access "../backend/Access";
 import Array "mo:base/Array";
+import Hash "mo:base/Hash";
 import Base "../backend/Base";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
@@ -68,10 +69,20 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
+  /// log the given event kind, with a unique ID and current time
+  func logEvent(ek : State.Event.EventKind) {
+    state.eventLog.add({
+                         id = state.eventCount ;
+                         time = timeNow_() ;
+                         kind = ek
+                       });
+    state.eventCount += 1;
+  };
+
   // responsible for adding metadata from the user to the state.
   // a null principal means that the username has no valid callers (yet), and the admin
   // must relate one or more principals to it.
-  func createProfile_(userName_ : Text, p: ?Principal, pic_ : ?ProfilePic) : ?ProfileInfoPlus {
+  func createProfile_(userName_ : Text, p: ?Principal, pic_ : ?ProfilePic) : ?() {
     switch (state.profiles.get(userName_)) {
       case (?_) { /* error -- ID already taken. */ null };
       case null { /* ok, not taken yet. */
@@ -82,17 +93,14 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         });
         // rewards init invariant: rewards is initialized to zero (is non-null).
         state.rewards.put(userName_, 0);
-        state.eventLog.add({
-          time = now;
-          kind = #createProfile({userName=userName_; pic=pic_})
-        });
+        logEvent(#createProfile({userName=userName_; pic=pic_}));
         state.access.userRole.put(userName_, #user);
         switch p {
           case null { }; // no related principals, yet.
           case (?p) { state.access.userPrincipal.put(userName_, p); }
         };
-        // return the full profile info
-        getProfilePlus_(userName_)
+        // success
+        ?()
       };
     }
   };
@@ -104,7 +112,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   public shared(msg) func createProfile(userName : Text, pic : ?ProfilePic) : async ?ProfileInfoPlus {
     do ? {
       accessCheck(msg.caller, #create, #user userName)!;
-      createProfile_(userName, ?msg.caller, pic)!
+      createProfile_(userName, ?msg.caller, pic)!;
+      // return the full profile info
+      getProfilePlus_(?userName, userName)! // self-view
     }
   };
 
@@ -157,16 +167,16 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getProfileInfo_(userId : UserId) : ?ProfileInfo {
+  func getProfileInfo_(target : UserId) : ?ProfileInfo {
     do ? {
-      let profile = state.profiles.get(userId)!;
-      let following_ = state.follows.get0(userId);
-      let followers_ = state.follows.get1(userId);
-      let likes_ = state.likes.get0(userId);
-      let superLikes_ = state.superLikes.get0(userId);
-      let uploaded_ = state.uploaded.get0(userId);
-      let rewards_ = state.rewards.get(userId)!;
-      let abuseFlags_ = state.abuseFlagVideos.get1Size(userId) ;
+      let profile = state.profiles.get(target)!;
+      let following_ = state.follows.get0(target);
+      let followers_ = state.follows.get1(target);
+      let likes_ = state.likes.get0(target);
+      let superLikes_ = state.superLikes.get0(target);
+      let uploaded_ = state.uploaded.get0(target);
+      let rewards_ = state.rewards.get(target)!;
+      let abuseFlagCount_ = state.abuseFlagVideos.get1Size(target);
       {
         userName = profile.userName ;
         followers = filterOutAbuseUsers(followers_)! ;
@@ -176,7 +186,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         uploadedVideos = filterOutAbuseVideos(uploaded_)! ;
         hasPic = false ;
         rewards = rewards_;
-        abuseFlags = abuseFlags_; // count other users' abuse flags on this user's profile.
+        abuseFlagCount = abuseFlagCount_ ;
       }
     }
   };
@@ -188,13 +198,28 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  // this is a deeper serialization of the user's profile so that we can do less work on the front-end.
-  //  I opted not to replace "getProfileInfo" as this is possibly bad code I (Andrew) have written, and don't want to
-  // fully commit :D -AW
-  public query(msg) func getProfilePlus(userId: UserId): async ?ProfileInfoPlus {
+  /// "Deeper" version of ProfileInfo.
+  ///
+  /// Gives Video- and ProfileInfos instead of merely Ids in the results.
+  ///
+  /// The optional "caller" UserId personalizes the resulting record for
+  /// various cases:
+  /// - When caller is not given, less information is non-null in result.
+  /// - When calling user is viewing their own profile,
+  ///   gives private and quasi-private info to them about their allowances.
+  /// - When calling user is viewing profile of another user,
+  ///   gives private info about super likes / abuse flags toward that use.
+  public query(msg) func getProfilePlus(caller: ?UserId, target: UserId): async ?ProfileInfoPlus {
     do ? {
-      accessCheck(msg.caller, #view, #user userId)!;
-      getProfilePlus_(userId)!
+      accessCheck(msg.caller, #view, #user target)!;
+      switch caller {
+        case null { getProfilePlus_(null, target)! };
+        case (?callerUserName) {
+               // has private access to our caller view?
+               accessCheck(msg.caller, #update, #user callerUserName)!;
+               getProfilePlus_(?callerUserName, target)!
+             };
+      }
     }
   };
 
@@ -224,13 +249,13 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getNonAbuseVideos(videos: [VideoId]) : ?[VideoInfo] {
+  func getNonAbuseVideos(caller: ?UserId, videos: [VideoId]) : ?[VideoInfo] {
     do ? {
       let nonAbuse = Buffer.Buffer<VideoInfo>(0);
       for (v in videos.vals()) {
         let flags = state.abuseFlagVideos.get1Size(v);
         if (flags < Param.contentModerationThreshold) {
-          nonAbuse.add(getVideoInfo_(v)!)
+          nonAbuse.add(getVideoInfo_(caller, v)!)
         }
       };
       nonAbuse.toArray()
@@ -250,22 +275,109 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getProfilePlus_(userId: UserId): ?ProfileInfoPlus {
-    //  TODO: add auth
+  func computeAllowance_(limitPerRecentDuration : Nat,
+                         collectEvent : State.Event.Event -> Bool,
+  ) : Types.AllowanceBalance {
+    if (limitPerRecentDuration == 0) {
+      #zeroForever
+    } else {
+      let now = timeNow_();
+      let matches = collectLogMatches(collectEvent);
+      if (matches.size() < limitPerRecentDuration) {
+        #nonZero (limitPerRecentDuration - matches.size()) // total remaining.
+      } else {
+        // assert invariant: we do not exceed the limit.
+        assert matches.size() == limitPerRecentDuration;
+        let leastRecentTime = matches[matches.size() - 1].time;
+        #zeroUntil (leastRecentTime + Param.recentPastDuration) // total wait.
+      }
+    }
+  };
+
+  // targetId -- for hashing the targets of abuse flags
+  func targetText(target : Types.ActionTarget) : Text {
+    switch target {
+    case (#video(i)) "#video=" # i;
+    case (#user(i)) "#user=" # i;
+    case _ { loop { assert false } };
+    }
+  };
+
+  // targetHash -- for collecting sets of targets, and doing set operations.
+  func targetHash(target : Types.ActionTarget) : Hash.Hash {
+    Text.hash(targetText(target))
+  };
+
+  func targetEqual(targ1 : Types.ActionTarget, targ2 : Types.ActionTarget) : Bool {
+    targ1 == targ2
+  };
+
+  func getUserAllowances_(user: UserId) : Types.UserAllowances {
+    {
+      abuseFlags = do {
+        let targets = TrieMap.TrieMap<Types.ActionTarget, Bool>(targetEqual, targetHash);
+        computeAllowance_(
+          Param.maxRecentAbuseFlags,
+          // true when we INCLUDE an event in the total
+          func (ev: State.Event.Event) : Bool {
+            switch (ev.kind) {
+            case (#abuseFlag(af)) {
+                   if (af.reporter != user) { return false };
+                   switch (targets.get(af.target)) {
+                     case null {
+                            targets.put(af.target, af.flag);
+                            af.flag
+                          };
+                     case (?b) { b }
+                   }};
+            case _ { false };
+            }
+          },
+        )};
+
+      superLikes = do {
+        let targets = TrieMap.TrieMap<Types.ActionTarget, Bool>(targetEqual, targetHash);
+        computeAllowance_(
+          Param.maxRecentSuperLikes,
+          func (ev: State.Event.Event) : Bool {
+            switch (ev.kind) {
+            case (#superLikeVideo(slv)) {
+                   if (slv.source != user) { return false };
+                   switch (targets.get(#video(slv.target))) {
+                     case null {
+                            targets.put(#video(slv.target), slv.superLikes);
+                            slv.superLikes
+                          };
+                     case (?b) { b }
+                   }};
+            case _ { false };
+            }
+            }
+        )};
+    }
+  };
+
+  func getProfilePlus_(caller: ?UserId, userId: UserId): ?ProfileInfoPlus {
     do ? {
       let profile = state.profiles.get(userId)!;
       {
         userName = profile.userName;
         following = getNonAbuseProfiles(state.follows.get0(userId))!;
         followers = getNonAbuseProfiles(state.follows.get1(userId))!;
-        likedVideos = getNonAbuseVideos(state.likes.get0(userId))!;
-        uploadedVideos = getNonAbuseVideos(state.uploaded.get0(userId))!;
+        likedVideos = getNonAbuseVideos(caller, state.likes.get0(userId))!;
+        uploadedVideos = getNonAbuseVideos(caller, state.uploaded.get0(userId))!;
         hasPic = false;
         rewards = state.rewards.get(userId)!;
-        abuseFlags = state.abuseFlagUsers.get1Size(userId) ; // other users' flags on this one.
+        abuseFlagCount = state.abuseFlagUsers.get1Size(userId) ; // count total for userId.
+        viewerHasFlagged = do ? { // if caller is non-null,
+          state.abuseFlagUsers.isMember(caller!, userId) ; // check if we are there.
+        };
+        allowances = do ? { if (caller! == userId) {
+          getUserAllowances_(caller!)
+        } else { null! } };
       }
     }
- };
+  };
 
   public query(msg) func getProfiles() : async ?[ProfileInfo] {
     do ? {
@@ -283,7 +395,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
       accessCheck(msg.caller, #admin, #all)!;
       let b = Buffer.Buffer<VideoInfo>(0);
       for ((v, _) in state.videos.entries()) {
-        b.add(getVideoInfo_(v)!)
+        b.add(getVideoInfo_(null, v)!)
       };
       b.toArray()
     }
@@ -327,16 +439,14 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         state.rewards.put(sender, balSrc - amount);
         state.rewards.put(receiver, balTgt + amount);
 
+        logEvent(#rewardPointTransfer({sender = sender; receiver = receiver; amount = amount}));
         state.messages.put(receiver,
-           { time = timeNow_();
+           { id = state.eventCount;
+             time = timeNow_();
              event = #transferReward {
                rewards = amount;
              }
            });
-        state.eventLog.add({
-          time = timeNow_();
-          kind = #rewardPointTransfer({sender = sender; receiver = receiver; amount = amount})
-        });
 
       } else { return null }
     }
@@ -354,7 +464,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
 
   func getVideoResult(i : VideoId) : ?VideoResult {
     do ? {
-      (getVideoInfo_(i)!, state.videoPics.get(i))
+      (getVideoInfo_(null, i)!, state.videoPics.get(i))
     }
   };
 
@@ -391,7 +501,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         if (vids.get(vid) == null) {
             vids.put(vid, ());
             let vPic = state.videoPics.get(vid);
-            let vi = getVideoInfo_(vid)!;
+            let vi = getVideoInfo_(?userId, vid)!;
             buf.add((vi, vPic));
         }
       };
@@ -401,7 +511,8 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
 
   public query(msg) func getFeedVideos(userId : UserId, limit : ?Nat) : async ?VideoResults {
     do ? {
-      accessCheck(msg.caller, #view, #user userId)!;
+      // privacy check: because we personalize the feed (example is abuse flag information).
+      accessCheck(msg.caller, #update, #user userId)!;
       getFeedVideos_(userId, limit)!
     }
   };
@@ -459,6 +570,34 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     })
   };
 
+  /// Collect "recent events" that match from the log.
+  ///
+  /// Visits events and orders array as most-to-least recent matching events.
+  /// (Most recent match is first visited and first in output, if any.
+  /// Least recent match is last visited and last in output, if any.)
+  ///
+  /// Generalizes checkEmitVideoViral_.
+  ///
+  /// This is "efficient enough" because we never check the full log,
+  /// and we intend to accelerate this operation further with
+  /// more pre-emptive caching of what we learn from doing this linear scan.
+  /// (Util this linear scan is too slow, let's avoid the complexity of more caching.)
+  func collectLogMatches(
+    collectEvent : State.Event.Event -> Bool,
+  ) : [State.Event.Event] {
+    let now = timeNow_();
+    let notRecent = now - Param.recentPastDuration;
+    let matches = Buffer.Buffer<State.Event.Event>(0);
+    label hugeLog
+    for (ev in state.eventLog.revVals()) {
+      if(ev.time <= notRecent){ break hugeLog };
+      if (collectEvent(ev)) {
+        matches.add(ev)
+      }
+    };
+    matches.toArray()
+  };
+
   // check if we need to emit viral video signal to CanCan logic.
   func checkEmitVideoViral_(video : VideoId) {
     let vinfo = Option.unwrap(state.videos.get(video));
@@ -511,8 +650,10 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
                             )});*/
         let score = Option.get(state.rewards.get(vinfo.userId), 0);
         state.rewards.put(vinfo.userId, score + Param.rewardsForUploader);
+        state.eventCount += 1;
         state.messages.put(vinfo.userId,
-                           { time = now;
+                           { id = state.eventCount;
+                             time = now;
                              event = #uploadReward {
                                  rewards = Param.rewardsForUploader;
                                  videoId = video;
@@ -521,8 +662,10 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         for (id in superLikers.vals()) {
             let score = Option.get(state.rewards.get(id.user), 0);
             state.rewards.put(id.user, score + Param.rewardsForSuperliker);
+            state.eventCount += 1;
             state.messages.put(id.user,
-                               { time = now;
+                               { id = state.eventCount;
+                                 time = now;
                                  event = #superlikerReward {
                                      rewards = Param.rewardsForSuperliker;
                                      videoId = video;
@@ -567,26 +710,21 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
       if superLikes_ {
         if (getSuperLikeValidNow_(userId, videoId)) {
           state.superLikes.put(userId, videoId);
-          state.eventLog.add({ time = timeNow_();
-                               kind = #superLikeVideo({ source = userId ;
-                                                        target = videoId ;
-                                                        superLikes = true }
-                               )});
+          logEvent(#superLikeVideo({ source = userId ;
+                                     target = videoId ;
+                                     superLikes = true }
+                   ));
           checkEmitVideoViral_(videoId);
         } else {
-          state.eventLog.add({ time = timeNow_();
-                               kind = #superLikeVideoFail({ source = userId ;
-                                                            target = videoId }
-                               )});
+          logEvent(#superLikeVideoFail({ source = userId ;
+                                         target = videoId }));
           return null // fail
         }
       } else {
         state.superLikes.delete(userId, videoId);
-        state.eventLog.add({ time = timeNow_();
-                             kind = #superLikeVideo({ source = userId ;
-                                                      target = videoId ;
-                                                      superLikes = false }
-                             )});
+        logEvent(#superLikeVideo({ source = userId ;
+                                   target = videoId ;
+                                   superLikes = false }));
       }
     }
   };
@@ -608,11 +746,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
       } else {
         state.likes.delete(userId, videoId)
       };
-      state.eventLog.add({ time = timeNow_();
-                           kind = #likeVideo({ source = userId ;
-                                               target = videoId ;
-                                               likes = willLike_ }
-                           )});
+      logEvent(#likeVideo({ source = userId ;
+                            target = videoId ;
+                            likes = willLike_ }));
     }
   };
 
@@ -656,8 +792,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
                               viewCount = 0 ;
                             });
            state.uploaded.put(i.userId, videoId);
-           state.eventLog.add({ time = now;
-                                kind = #createVideo({info = i}) });
+           logEvent(#createVideo({info = i}));
            ?videoId
          };
     }
@@ -670,7 +805,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     }
   };
 
-  func getVideoInfo_ (videoId : VideoId) : ?VideoInfo {
+  func getVideoInfo_ (caller : ?UserId, videoId : VideoId) : ?VideoInfo {
     do ? {
       let v = state.videos.get(videoId)!;
       {
@@ -690,15 +825,25 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
         // This implementation makes public all users who flagged every video,
         // but if that information should be kept private, get video info
         // could return just whether the calling user flagged it.
-        abuseFlagUsers = state.abuseFlagVideos.get1(videoId) ;
+        viewerHasFlagged = do ? {
+          state.abuseFlagVideos.isMember(caller!, videoId) ;
+        };
+        abuseFlagCount = state.abuseFlagVideos.get1Size(videoId);
       }
     }
   };
 
-  public query(msg) func getVideoInfo (videoId : VideoId) : async ?VideoInfo {
+  public query(msg) func getVideoInfo (caller : ?UserId, target : VideoId) : async ?VideoInfo {
     do ? {
-      accessCheck(msg.caller, #view, #video videoId)!;
-      getVideoInfo_(videoId)!
+      accessCheck(msg.caller, #view, #video target)!;
+      switch caller {
+        case null { getVideoInfo_(null, target)! };
+        case (?callerUserName) {
+               // has private access to our caller view?
+               accessCheck(msg.caller, #update, #user callerUserName)!;
+               getVideoInfo_(?callerUserName, target)!
+             };
+      }
     }
   };
 
@@ -738,10 +883,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     (reporter : UserId, target : VideoId, abuseFlag : Bool) : async ?() {
     do ? {
       accessCheck(msg.caller, #update, #user reporter)!;
-      state.eventLog.add({ time = timeNow_();
-                           kind = #abuseFlag({ reporter = reporter ;
-                                               target = #video(target);
-                                               flag = abuseFlag })});
+      logEvent(#abuseFlag({ reporter = reporter ;
+                            target = #video(target);
+                            flag = abuseFlag }));
       if abuseFlag {
         state.abuseFlagVideos.put(reporter, target)
       } else {
@@ -756,10 +900,9 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
     (reporter : UserId, target : UserId, abuseFlag : Bool) : async ?() {
     do ? {
       accessCheck(msg.caller, #update, #user reporter)!;
-      state.eventLog.add({ time = timeNow_();
-                           kind = #abuseFlag({ reporter = reporter ;
-                                               target = #user(target);
-                                               flag = abuseFlag })});
+      logEvent(#abuseFlag({ reporter = reporter ;
+                            target = #user(target);
+                            flag = abuseFlag }));
       if abuseFlag {
         state.abuseFlagUsers.put(reporter, target)
       } else {
@@ -806,7 +949,7 @@ shared ({caller = initPrincipal}) actor class CanCan () /* : Types.Service */ {
   func createTestData_(users : [UserId], videos : [(UserId, VideoId)]) : ?() {
     do ? {
       for (u in users.vals()) {
-        let _ = createProfile_(u, null, null)!;
+        createProfile_(u, null, null)!;
       };
       for ((u, v) in videos.vals()) {
         let _ = createVideo_(

@@ -17,6 +17,11 @@ module {
   /// Users may not super like more than this many videos per "recent duration of time".
   public let maxRecentSuperLikes : Nat = 10;
 
+  /// Abuse flag limit.
+  ///
+  /// Users may not abuse-flag more than this many videos per "recent duration of time".
+  public let maxRecentAbuseFlags : Nat = 10;
+
   /// Super like viral threshold.
   ///
   /// When a video has this many super likes, the system "emits" a viralVideo signal.

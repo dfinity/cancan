@@ -55,9 +55,21 @@ public type ProfileInfo = {
  likedVideos: [VideoId];
  hasPic: Bool;
  rewards: Nat;
- abuseFlags: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
 };
 
+public type AllowanceBalance = {
+  /// Non-zero balance of the given amount (the allowance unit varies by use).
+  #nonZero : Nat;
+  /// Zero now, and will be zero until the IC reaches the given time.
+  #zeroUntil : Timestamp;
+  /// No allowance at all, ever.
+  #zeroForever
+};
+
+/// "Deeper" version of ProfileInfo.
+///
+/// Gives Video- and ProfileInfos instead of merely Ids in the results.
 public type ProfileInfoPlus = {
   userName: Text;
  following: [ProfileInfo];
@@ -66,7 +78,22 @@ public type ProfileInfoPlus = {
  likedVideos: [VideoInfo];
  hasPic: Bool;
  rewards: Nat;
- abuseFlags: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ /// viewerHasFlagged is
+ /// ?true if we (the User requesting this profile) has flagged this profile for abuse.
+ /// ?false if not, and
+ /// null if no specific requesting user is defined by context.
+ viewerHasFlagged: ?Bool;
+ /// null if not giving a self view of the profile, otherwise, gives UserAllowances for userName.
+ allowances: ?UserAllowances;
+};
+
+/// Some user actions may not occur more than X number of times per 24 hours.
+/// Equivalently, these actions are limited by "allowances" that are replenished every 24 hours.
+/// These allowances are quasi-private information, since they leak user data, indirectly.
+public type UserAllowances = {
+  abuseFlags : AllowanceBalance ;
+  superLikes : AllowanceBalance ;
 };
 
 /// video information provided by front end to service, upon creation.
@@ -94,7 +121,12 @@ public type VideoInfo = {
  viewCount: Nat;
  name: Text;
  chunkCount: Nat;
- abuseFlagUsers: [UserId]; // A lit of users that have flagged this video for abuse
+ abuseFlagCount: Nat; // abuseFlags counts other users' flags on this profile, for possible blurring.
+ /// viewerHasFlagged is
+ /// ?true if we (the User requesting this profile) has flagged this profile for abuse.
+ /// ?false if not, and
+ /// null if no specific requesting user is defined by context.
+ viewerHasFlagged: ?Bool; // true if we (the User requesting this profile) has flagged this profile for abuse.
 };
 
 public type VideoResult = (VideoInfo, ?VideoPic);
@@ -102,6 +134,7 @@ public type VideoResults = [VideoResult];
 
 /// Notification messages
 public type Message = {
+  id: Nat;
     time: Timestamp;
     event: Event;
 };

@@ -116,6 +116,7 @@ module {
     };
 
     public type Event = {
+      id : Nat; // unique ID, to avoid using time as one (not always unique)
       time : Int; // using mo:base/Time and Time.now() : Int
       kind : EventKind;
     };
@@ -134,6 +135,7 @@ module {
 
     /// event log.
     eventLog : Event.Log;
+    var eventCount : Nat;
 
     /// all profiles.
     profiles : Map<Types.UserId, Profile>;
@@ -228,8 +230,7 @@ module {
     let equal = (Text.equal, Text.equal);
     let hash = (Text.hash, Text.hash);
     func messageEqual(a: Types.Message, b: Types.Message) : Bool = a == b;
-    // not a very good hash, but we are not using the hash
-    func messageHash(m: Types.Message) : Hash.Hash = Int.hash(m.time);
+    func messageHash(m: Types.Message) : Hash.Hash = Int.hash(m.id); // id is unique, so hash is unique
     let uploaded_ = RelObj.RelObj<Types.UserId, Types.VideoId>(hash, equal);
     let st : State = {
       access = Access.Access({ admin = init.admin ; uploaded = uploaded_ });
@@ -245,6 +246,7 @@ module {
       superLikes = RelObj.RelObj(hash, equal);
       uploaded = uploaded_;
       eventLog = SeqObj.Seq<Event.Event>(Event.equal, null);
+      var eventCount = 0;
       abuseFlagVideos = RelObj.RelObj(hash, equal);
       abuseFlagUsers = RelObj.RelObj(hash, equal);
     };
