@@ -21,7 +21,7 @@ load "preludeTiny.repl";
 
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
-call CanCan.getVideoInfo("bob-fish0-0");
+call CanCan.getVideoInfo(opt "bob", "bob-fish0-0");
 assert _ ~= opt record { abuseFlags = 0 : nat };
 
 //
@@ -30,7 +30,7 @@ assert _ ~= opt record { abuseFlags = 0 : nat };
 call CanCan.putAbuseFlagVideo("alice", "bob-fish0-0", true);
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
-call CanCan.getVideoInfo("bob-fish0-0");
+call CanCan.getVideoInfo(opt "bob", "bob-fish0-0");
 assert _ ~= opt record { abuseFlags = 1 : nat };
 
 //
@@ -40,7 +40,7 @@ assert _ ~= opt record { abuseFlags = 1 : nat };
 call CanCan.putAbuseFlagVideo("alice", "bob-fish0-0", true);
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { "bob-fish0-0" } };
-call CanCan.getVideoInfo("bob-fish0-0");
+call CanCan.getVideoInfo(opt "alice", "bob-fish0-0");
 assert _ ~= opt record { abuseFlags = 1 : nat };
 
 //
@@ -50,7 +50,7 @@ assert _ ~= opt record { abuseFlags = 1 : nat };
 call CanCan.putAbuseFlagVideo("bob", "bob-fish0-0", true);
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { } }; /* REDACTED! */
-call CanCan.getProfilePlus("bob");
+call CanCan.getProfilePlus(opt "bob", "bob");
 assert _ ~= opt record { uploadedVideos = vec { } }; /* REDACTED! */
-call CanCan.getVideoInfo("bob-fish0-0");
+call CanCan.getVideoInfo(opt "bob', "bob-fish0-0");
 assert _ ~= opt record { abuseFlags = 2 : nat };
