@@ -52,5 +52,5 @@ call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { uploadedVideos = vec { } }; /* REDACTED! */
 call CanCan.getProfilePlus(opt "bob", "bob");
 assert _ ~= opt record { uploadedVideos = vec { } }; /* REDACTED! */
-call CanCan.getVideoInfo(opt "bob', "bob-fish0-0");
+call CanCan.getVideoInfo(opt "bob", "bob-fish0-0");
 assert _ ~= opt record { abuseFlags = 2 : nat };
