@@ -39,7 +39,7 @@ assert _ ~= opt record { viralAt = null : opt int };
 call CanCan.getProfileInfo("cathy");
 assert _ ~= opt record { rewards = 0 : nat };
 call CanCan.getMessages("bob");
-assert _ == vec {};
+assert _ == opt vec {};
 
 // duplicate superlikes doesn't count
 call CanCan.putSuperLike("alice", "bob-fish0-0", true);
@@ -55,7 +55,7 @@ assert _ ~= opt record { rewards = 10 : nat};
 call CanCan.getProfileInfo("bob");
 assert _ ~= opt record { rewards = 60 : nat };
 call CanCan.getMessages("bob");
-assert _ == vec {
+assert _ == opt vec {
     record {
       time = 0 : int;
       event = variant {
