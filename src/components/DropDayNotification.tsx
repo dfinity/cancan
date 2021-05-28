@@ -10,7 +10,7 @@ import close from "../assets/images/icon-close.png";
 import "./DropDayNotification.scss";
 
 // We track this in localStorage so as not to repeatedly alert the user
-const DROP_DAY_LS_KEY = "ic-can-can-dropday-alerted";
+const DROP_DAY_LS_KEY = "ic-luv-feed-dropday-alerted";
 
 function getAlerted(): boolean {
   return localStorage.getItem(DROP_DAY_LS_KEY) === "true";
