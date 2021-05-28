@@ -1,6 +1,6 @@
 import React, { PropsWithChildren, useEffect } from "react";
 import { useHistory } from "react-router-dom";
-import logo from "../assets/images/cancan-logo.png";
+import logo from "../assets/images/luvfeed-logo.png";
 import { useAuth } from "../utils";
 
 /*

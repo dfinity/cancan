@@ -6,7 +6,7 @@ import {
   getUserNameByPrincipal,
   useAuth,
 } from "../utils";
-import logo from "../assets/images/cancan-logo.png";
+import logo from "../assets/images/luvfeed-logo.png";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { useHistory } from "react-router";
 import "./SignUp.scss";
