@@ -32,19 +32,18 @@ function createActor(identity?: Identity) {
  * Identity, to ensure their Principal is passed to the backend.
  */
 class ActorController {
-  _actor: _SERVICE;
+  _actor: Promise<_SERVICE>;
   _isAuthenticated: boolean = false;
-  isReady: boolean = false;
 
   constructor() {
     this._actor = this.initBaseActor();
   }
 
-  initBaseActor() {
-    const { agent, actor } = createActor();
+  async initBaseActor(identity?: Identity) {
+    const { agent, actor } = createActor(identity);
     // The root key only has to be fetched for local development environments
     if (isLocalEnv) {
-      agent.fetchRootKey().then(() => (this.isReady = true));
+      await agent.fetchRootKey();
     }
     return actor;
   }
@@ -61,13 +60,8 @@ class ActorController {
    * to create a new actor with it, so they pass their Principal to the backend.
    */
   async authenticateActor(identity: Identity) {
-    const { agent, actor } = createActor(identity);
-    if (isLocalEnv) {
-      await agent.fetchRootKey();
-    }
-    this._actor = actor;
+    this._actor = this.initBaseActor(identity);
     this._isAuthenticated = true;
-    this.isReady = true;
   }
 
   /*
@@ -75,6 +69,7 @@ class ActorController {
    */
   unauthenticateActor() {
     this._actor = this.initBaseActor();
+    this._isAuthenticated = false;
   }
 }
 
