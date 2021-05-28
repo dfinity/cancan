@@ -69,7 +69,7 @@ export default function TippingButton({
       <img
         src={tipIcon}
         className={activeAnimations.length > 0 ? "active" : "default"}
-        alt="icon: video reward points"
+        alt="icon: reward points"
       />
       <span>{localRewardPoints}</span>
       <div className="TippingEffect">

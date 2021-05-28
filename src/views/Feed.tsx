@@ -35,8 +35,8 @@ export function Feed({
   return (
     <main>
       <LoadingIndicator
-        loadingMessage="Loading videos..."
-        completedMessage="Videos loaded"
+        loadingMessage="Loading..."
+        completedMessage="Loaded"
         isLoading={isLoading}
       />
       <div className="feed">

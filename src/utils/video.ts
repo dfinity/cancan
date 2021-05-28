@@ -137,7 +137,7 @@ async function checkVidFromIC(videoId: string, userId: string) {
   console.log("Checking canister for uploaded video...");
   const resultFromCanCan = await getVideoInfo(userId, videoId);
   if (resultFromCanCan === null) {
-    throw Error("Invalid video received from CanCan Canister");
+    throw Error("Invalid video received from LUV FEED Canister");
   }
   console.log("Upload verified.");
   return resultFromCanCan;

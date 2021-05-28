@@ -90,7 +90,7 @@ export function SignUp() {
       />
 
       <form onSubmit={submit}>
-        <img alt="cancan logo" src={logo} style={{ width: "24.2rem" }} />
+        <img alt="LUV FEED logo" src={logo} style={{ width: "24.2rem" }} />
 
         <div className="username-container">
           <label htmlFor="username">

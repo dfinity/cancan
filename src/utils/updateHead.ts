@@ -1,7 +1,7 @@
 // Updated required for "mobile web app" behavior
 // https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
 
-const APP_TITLE = "CanCan";
+const APP_TITLE = "LUV FEED";
 
 const updates = [
   {

@@ -51,7 +51,7 @@ export function Discover(props: PropsWithRef<DiscoverProps>) {
   return (
     <main id="discover">
       <LoadingIndicator
-        loadingMessage="Loading videos..."
+        loadingMessage="Loading..."
         isLoading={isLoading}
       />
       {videoPreview && profileInfo !== undefined && (

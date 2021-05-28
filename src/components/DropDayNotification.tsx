@@ -67,12 +67,12 @@ export function DropDayNotification() {
             style={{ transform: "rotate(-90deg)" }}
             width={8}
           />
-          <img src={tokenIcon} alt="Tokens" width={23} />
+          <img src={tokenIcon} alt="LUV Coins" width={23} />
         </div>
         <div className="alert-content">
-          <div className="alert-header">Today is Drop Day!</div>
+          <div className="alert-header"> Today is Spread LUV Day!</div>
           <div className="alert-message">
-            Exchange your Reward Points for tokens or prizes.
+             Exchange your Reward Points for LUV Coins or prizes.
             <Link className="alert-link" to="/rewards" onClick={closeAlert}>
               View now.
             </Link>

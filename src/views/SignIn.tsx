@@ -30,7 +30,7 @@ export function SignIn(props: PropsWithChildren<{}>) {
 
   return (
     <div id="form-container">
-      <img alt="cancan logo" src={logo} style={{ width: "24.2rem" }} />
+      <img alt="LUV FEED logo" src={logo} style={{ width: "24.2rem" }} />
       <button onClick={handleLogin} id="sign-in" className="primary medium">
         {children}
       </button>
