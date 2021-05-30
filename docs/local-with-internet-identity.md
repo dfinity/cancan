@@ -11,7 +11,7 @@ CanCan must then be accessed in such a way that it uses the local internet-ident
 
 ## Steps
 
-1. Follow the CanCan [README](../README.md) to start a local replica, deploy CanCan, and opn the app to the sign in screen.
+1. Follow the CanCan [README](../README.md) to start a local replica, deploy CanCan, and open the app to the sign in screen.
 2. Clone the git repo for https://github.com/dfinity/internet-identity to another directory
 3. Ensure you have the correct dependencies to build internet-identity (e.g. `rustc@1.51.0` at time of this writing)
 5. Deploy internet-identity like:
